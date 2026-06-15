@@ -12,9 +12,11 @@ referenced — a data-flow lens over your state machine.
 
 ## Features (current)
 
-- Custom editor for `*.asl.json` / `*.asl` files with an **interactive SVG
-  graph** (dagre layout, pan / zoom / fit, per-state-type nodes, labeled edges
-  for Choice / Default / Catch, and `branch` / `map` edges into nested states).
+- Custom editor for `*.asl.json` / `*.asl` and `*.asl.yaml` / `*.asl.yml` files
+  with an **interactive SVG graph** (dagre layout, pan / zoom / fit,
+  per-state-type nodes, labeled edges for Choice / Default / Catch, and
+  `branch` / `map` edges into nested states). Click-to-source works for both
+  JSON and YAML.
 - **Variable inspector (the differentiator):** click a state to see the
   variables it *creates* and *uses*; click a variable to **highlight every
   state** that defines it (green) or references it (blue) and dim the rest.
@@ -41,6 +43,8 @@ referenced — a data-flow lens over your state machine.
   `Iterator`).
 - Query language: **JSONata** is the target for variable analysis. JSONPath
   machines render but report no user variables.
+- File formats: **JSON** (`*.asl.json`, `*.asl`) and **YAML** (`*.asl.yaml`,
+  `*.asl.yml`), e.g. a state machine exported as YAML from Workflow Studio.
 
 ## Examples
 
@@ -48,6 +52,7 @@ The [`examples/`](examples/) folder contains state machines for trying the
 viewer:
 
 - `order-processing.asl.json` — Parallel + Map + Choice with shared variables.
+- `order-processing.asl.yaml` — the same workflow in YAML.
 - `retry-catch.asl.json` — Retry/Catch with variables assigned on the error path.
 - `choice-routing.asl.json` — Choice routing driven by assigned variables.
 - `diagnostics-demo.asl.json` — dangling transition + unreachable state.

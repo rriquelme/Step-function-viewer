@@ -1,7 +1,7 @@
 // Builds the serializable view model handed to the webview. This is the single
 // boundary between the (vscode-free, unit-testable) ASL logic and the UI.
 import { type Graph, type GraphNode, buildGraph } from '../asl/graph';
-import { parseStateMachine } from '../asl/parser';
+import { type DocumentFormat, parseDocument } from '../asl/document';
 import { effectiveQueryLanguage, machineQueryLanguage } from '../asl/queryLanguage';
 import { type Diagnostic, validateStateMachine } from '../asl/validate';
 import { type StateVariableSummary, type VariableInfo, analyzeVariables } from '../analysis/variables';
@@ -27,18 +27,14 @@ export interface ViewModel {
 
 const EMPTY_SUMMARY: StateVariableSummary = { created: [], used: [] };
 
-export function buildViewModel(text: string): ViewModel {
-  const { machine, tree, errors } = parseStateMachine(text);
-  const graph = buildGraph(machine, tree);
-  const diagnostics = validateStateMachine(machine, graph, tree);
-  const analysis = analyzeVariables(machine, graph, tree);
+export function buildViewModel(text: string, format: DocumentFormat = 'json'): ViewModel {
+  const { machine, rangeAt, errors } = parseDocument(text, format);
+  const graph = buildGraph(machine, rangeAt);
+  const diagnostics = validateStateMachine(machine, graph, rangeAt);
+  const analysis = analyzeVariables(machine, graph, rangeAt);
 
   for (const err of errors) {
-    diagnostics.unshift({
-      message: `JSON syntax error (code ${err.error}).`,
-      severity: 'error',
-      range: { start: err.offset, end: err.offset + err.length },
-    });
+    diagnostics.unshift({ message: err.message, severity: 'error', range: err.range });
   }
 
   const nodes: ViewNode[] = graph.nodes.map((node) => ({

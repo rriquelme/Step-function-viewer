@@ -6,10 +6,11 @@ fully unit-testable) and a thin **VS Code integration + webview UI** around it.
 ## Data flow
 
 ```
-ASL JSON document
+ASL document (JSON or YAML)
       │
       ▼
-parseStateMachine  (src/asl/parser.ts)         position-aware JSON (jsonc-parser)
+parseDocument  (src/asl/document.ts)            machine object + rangeAt resolver
+   (JSON: jsonc-parser, YAML: yaml)              (position-aware, format-agnostic)
       │
       ├─► buildGraph     (src/asl/graph.ts)     nodes + typed edges, nested scopes flattened
       ├─► validate       (src/asl/validate.ts)  structural diagnostics
@@ -50,6 +51,13 @@ Webview (src/webview/main.ts)
   as references, and excludes function calls (`$map(...)`), reserved context
   (`$states`, `$$`), expression-local bindings (`$x := ...`), and string
   literals. See `src/asl/jsonata.ts`.
+
+- **Format-agnostic positions.** JSON and YAML are unified behind
+  `parseDocument`, which returns the plain `machine` object plus a `rangeAt(path)`
+  resolver. `buildGraph`, `validateStateMachine`, and `analyzeVariables` take
+  `rangeAt` rather than a format-specific syntax tree, so click-to-source works
+  identically for both formats and adding a new format is localized to
+  `document.ts`.
 
 ## Messaging
 

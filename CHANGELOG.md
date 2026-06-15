@@ -7,7 +7,9 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Custom editor for `*.asl.json` / `*.asl` files.
+- Custom editor for `*.asl.json` / `*.asl` and `*.asl.yaml` / `*.asl.yml` files.
+- YAML support with position-aware click-to-source (parsed via the `yaml`
+  package), so a state machine exported as YAML renders just like JSON.
 - Interactive SVG graph (dagre layout) with pan, zoom, and fit-to-screen;
   per-state-type nodes and labeled, per-kind edges (`next`, `choice`, `default`,
   `catch`, `branch`, `map`).

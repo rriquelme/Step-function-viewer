@@ -1,7 +1,7 @@
 // Converts a parsed state machine into a normalized graph model: nodes (states)
 // and edges (transitions), flattening nested Parallel branches and Map item
 // processors into a single graph with container relationships.
-import { type SourceRange, rangeForPath } from './parser';
+import type { RangeResolver, SourceRange } from './parser';
 import type {
   ChoiceState,
   MapState,
@@ -11,7 +11,6 @@ import type {
   StateType,
   TaskState,
 } from './types';
-import type { Node } from 'jsonc-parser';
 
 export type EdgeKind = 'next' | 'choice' | 'default' | 'catch' | 'branch' | 'map';
 
@@ -55,7 +54,7 @@ function makeId(prefix: string, name: string): string {
   return prefix ? `${prefix}${name}` : name;
 }
 
-export function buildGraph(machine: StateMachine | undefined, tree: Node | undefined): Graph {
+export function buildGraph(machine: StateMachine | undefined, rangeAt: RangeResolver): Graph {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
 
@@ -77,7 +76,7 @@ export function buildGraph(machine: StateMachine | undefined, tree: Node | undef
         name,
         type: state.Type,
         jsonPath,
-        range: rangeForPath(tree, jsonPath),
+        range: rangeAt(jsonPath),
         parentId: ctx.parentId,
         container: isContainer,
       });

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { detectFormat } from '../asl/document';
 import { buildViewModel } from '../model/viewModel';
 import type { ExtensionToWebview, WebviewToExtension } from '../shared/protocol';
 
@@ -40,7 +41,7 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
 
     const updateWebview = () => {
       try {
-        const model = buildViewModel(document.getText());
+        const model = buildViewModel(document.getText(), detectFormat(document.fileName));
         const layoutDirection =
           vscode.workspace
             .getConfiguration('stepFunctionViewer')
@@ -100,7 +101,7 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
 
   /** Reveal the source range of a state in a text editor (click-to-source). */
   private async revealState(document: vscode.TextDocument, nodeId: string): Promise<void> {
-    const model = buildViewModel(document.getText());
+    const model = buildViewModel(document.getText(), detectFormat(document.fileName));
     const node = model.nodes.find((n) => n.id === nodeId);
     if (!node?.range) {
       return;

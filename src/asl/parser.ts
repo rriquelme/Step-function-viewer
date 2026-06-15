@@ -15,6 +15,9 @@ export interface SourceRange {
   end: number;
 }
 
+/** Resolves the source range for a JSON/YAML path (format-agnostic). */
+export type RangeResolver = (path: (string | number)[]) => SourceRange | undefined;
+
 export interface ParseResult {
   /** The typed state machine, or undefined if the document could not be parsed. */
   machine: StateMachine | undefined;

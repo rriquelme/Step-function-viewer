@@ -1,0 +1,44 @@
+# Same workflow as order-processing.asl.json, exported as YAML, to exercise the
+# viewer's .asl.yaml support (graph, variables, and click-to-source).
+Comment: Sample JSONata state machine in YAML exercising variables, Choice and Map.
+QueryLanguage: JSONata
+StartAt: ValidateOrder
+States:
+  ValidateOrder:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: validateOrder
+      Payload: "{% $states.input %}"
+    Assign:
+      orderId: "{% $states.input.orderId %}"
+      customerTier: "{% $states.input.customer.tier %}"
+    Next: IsPriority
+  IsPriority:
+    Type: Choice
+    Choices:
+      - Condition: "{% $customerTier = 'gold' %}"
+        Next: PriorityShipping
+    Default: StandardShipping
+  PriorityShipping:
+    Type: Pass
+    Next: ShipItems
+  StandardShipping:
+    Type: Pass
+    Next: ShipItems
+  ShipItems:
+    Type: Map
+    Items: "{% $states.input.items %}"
+    ItemProcessor:
+      StartAt: ShipItem
+      States:
+        ShipItem:
+          Type: Task
+          Resource: arn:aws:states:::lambda:invoke
+          Arguments:
+            FunctionName: ship
+            Payload: "{% { 'orderId': $orderId, 'tier': $customerTier } %}"
+          End: true
+    Next: Done
+  Done:
+    Type: Succeed

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { looksLikeStateMachine } from './asl/parser';
+import { detectFormat, looksLikeStateMachine } from './asl/document';
 import { registerDiagnostics } from './editor/diagnostics';
 import { StepFunctionEditorProvider } from './editor/stepFunctionEditorProvider';
 
@@ -61,8 +61,10 @@ function registerAutoOpen(): vscode.Disposable {
 }
 
 function isAslTextDocument(document: vscode.TextDocument): boolean {
-  if (/\.asl(\.json)?$/.test(document.fileName)) {
+  if (/\.asl(\.json|\.ya?ml)?$/.test(document.fileName)) {
     return true;
   }
-  return document.languageId === 'json' && looksLikeStateMachine(document.getText());
+  const format = detectFormat(document.fileName);
+  const lang = format === 'yaml' ? 'yaml' : 'json';
+  return document.languageId === lang && looksLikeStateMachine(document.getText(), format);
 }

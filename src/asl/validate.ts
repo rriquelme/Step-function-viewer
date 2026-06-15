@@ -1,10 +1,9 @@
 // Structural validation of a state machine, producing diagnostics with source
 // ranges so the editor can surface squiggles and a problems list.
 import type { Graph } from './graph';
-import { type SourceRange, rangeForPath } from './parser';
+import type { RangeResolver, SourceRange } from './parser';
 import { resolveByPath } from './resolve';
 import type { State, StateMachine } from './types';
-import type { Node } from 'jsonc-parser';
 
 export type DiagnosticSeverity = 'error' | 'warning';
 
@@ -24,7 +23,7 @@ const CHOICE_TYPES = new Set(['Choice']);
 export function validateStateMachine(
   machine: StateMachine | undefined,
   graph: Graph,
-  tree: Node | undefined,
+  rangeAt: RangeResolver,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   if (!machine) {
@@ -38,7 +37,7 @@ export function validateStateMachine(
     diagnostics.push({
       message: `"StartAt" points to unknown state "${machine.StartAt}".`,
       severity: 'error',
-      range: rangeForPath(tree, ['StartAt']),
+      range: rangeAt(['StartAt']),
     });
   }
 

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { parseStateMachine } from '../../src/asl/parser';
+import { parseDocument } from '../../src/asl/document';
 import { buildGraph } from '../../src/asl/graph';
 import { analyzeVariables } from '../../src/analysis/variables';
 
 function analyze(doc: object) {
-  const { machine, tree } = parseStateMachine(JSON.stringify(doc));
-  const graph = buildGraph(machine, tree);
-  return analyzeVariables(machine, graph, tree);
+  const { machine, rangeAt } = parseDocument(JSON.stringify(doc));
+  const graph = buildGraph(machine, rangeAt);
+  return analyzeVariables(machine, graph, rangeAt);
 }
 
 describe('analyzeVariables', () => {
@@ -77,9 +77,9 @@ describe('analyzeVariables', () => {
       resolve(__dirname, '../../examples/order-processing.asl.json'),
       'utf8',
     );
-    const { machine, tree } = parseStateMachine(text);
-    const graph = buildGraph(machine, tree);
-    const analysis = analyzeVariables(machine, graph);
+    const { machine, rangeAt } = parseDocument(text);
+    const graph = buildGraph(machine, rangeAt);
+    const analysis = analyzeVariables(machine, graph, rangeAt);
 
     const names = analysis.variables.map((v) => v.name);
     expect(names).toContain('orderId');

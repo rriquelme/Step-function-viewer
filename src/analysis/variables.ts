@@ -4,10 +4,9 @@
 // click-a-state menu). This is the core of the extension's differentiator.
 import type { Graph } from '../asl/graph';
 import { extractVariableReferences } from '../asl/jsonata';
-import { type SourceRange, rangeForPath } from '../asl/parser';
+import type { RangeResolver, SourceRange } from '../asl/parser';
 import { resolveByPath } from '../asl/resolve';
 import type { CatchRule, State, StateMachine } from '../asl/types';
-import type { Node } from 'jsonc-parser';
 
 export interface VariableUsage {
   /** Scope-qualified state id. */
@@ -48,7 +47,7 @@ type RelPath = (string | number)[];
 export function analyzeVariables(
   machine: StateMachine | undefined,
   graph: Graph,
-  tree?: Node,
+  rangeAt: RangeResolver,
 ): VariableAnalysis {
   const index = new Map<string, VariableInfo>();
   const perState: Record<string, StateVariableSummary> = {};
@@ -77,7 +76,7 @@ export function analyzeVariables(
         nodeId: node.id,
         stateName: node.name,
         field: 'Assign',
-        range: rangeForPath(tree, [...node.jsonPath, ...path]),
+        range: rangeAt([...node.jsonPath, ...path]),
       });
     }
 
@@ -87,7 +86,7 @@ export function analyzeVariables(
         nodeId: node.id,
         stateName: node.name,
         field,
-        range: rangeForPath(tree, [...node.jsonPath, ...path]),
+        range: rangeAt([...node.jsonPath, ...path]),
       });
     }
 

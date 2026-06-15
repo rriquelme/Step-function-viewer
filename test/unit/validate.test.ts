@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { parseStateMachine } from '../../src/asl/parser';
+import { parseDocument } from '../../src/asl/document';
 import { buildGraph } from '../../src/asl/graph';
 import { validateStateMachine } from '../../src/asl/validate';
 
 function diagnose(doc: object) {
   const text = JSON.stringify(doc);
-  const { machine, tree } = parseStateMachine(text);
-  const graph = buildGraph(machine, tree);
-  return validateStateMachine(machine, graph, tree);
+  const { machine, rangeAt } = parseDocument(text);
+  const graph = buildGraph(machine, rangeAt);
+  return validateStateMachine(machine, graph, rangeAt);
 }
 
 describe('validateStateMachine', () => {

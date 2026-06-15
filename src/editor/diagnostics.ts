@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { looksLikeStateMachine } from '../asl/parser';
+import { detectFormat, looksLikeStateMachine } from '../asl/document';
 import { buildViewModel } from '../model/viewModel';
 
 /**
@@ -14,7 +14,7 @@ export function registerDiagnostics(): vscode.Disposable {
       collection.delete(document.uri);
       return;
     }
-    const model = buildViewModel(document.getText());
+    const model = buildViewModel(document.getText(), detectFormat(document.fileName));
     const diagnostics = model.diagnostics.map((d) => {
       const range = d.range
         ? new vscode.Range(
@@ -55,8 +55,10 @@ export function registerDiagnostics(): vscode.Disposable {
 }
 
 function isAslDocument(document: vscode.TextDocument): boolean {
-  if (/\.asl(\.json)?$/.test(document.fileName)) {
+  if (/\.asl(\.json|\.ya?ml)?$/.test(document.fileName)) {
     return true;
   }
-  return document.languageId === 'json' && looksLikeStateMachine(document.getText());
+  const format = detectFormat(document.fileName);
+  const lang = format === 'yaml' ? 'yaml' : 'json';
+  return document.languageId === lang && looksLikeStateMachine(document.getText(), format);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseStateMachine } from '../../src/asl/parser';
+import { parseDocument } from '../../src/asl/document';
 import { buildGraph } from '../../src/asl/graph';
 
 const SIMPLE = JSON.stringify({
@@ -35,8 +35,8 @@ const NESTED = JSON.stringify({
 
 describe('buildGraph', () => {
   it('builds nodes and typed edges for a flat machine', () => {
-    const { machine, tree } = parseStateMachine(SIMPLE);
-    const graph = buildGraph(machine, tree);
+    const { machine, rangeAt } = parseDocument(SIMPLE);
+    const graph = buildGraph(machine, rangeAt);
 
     expect(graph.startAt).toBe('A');
     expect(graph.nodes.map((n) => n.id).sort()).toEqual(['A', 'B', 'C', 'D']);
@@ -48,8 +48,8 @@ describe('buildGraph', () => {
   });
 
   it('flattens Parallel branches and Map item processors with scoped ids', () => {
-    const { machine, tree } = parseStateMachine(NESTED);
-    const graph = buildGraph(machine, tree);
+    const { machine, rangeAt } = parseDocument(NESTED);
+    const graph = buildGraph(machine, rangeAt);
     const ids = graph.nodes.map((n) => n.id);
 
     expect(ids).toContain('P/b0/X');
@@ -64,8 +64,8 @@ describe('buildGraph', () => {
   });
 
   it('records source ranges for click-to-source', () => {
-    const { machine, tree } = parseStateMachine(SIMPLE);
-    const graph = buildGraph(machine, tree);
+    const { machine, rangeAt } = parseDocument(SIMPLE);
+    const graph = buildGraph(machine, rangeAt);
     const a = graph.nodes.find((n) => n.id === 'A');
     expect(a?.range).toBeDefined();
     expect(a!.range!.end).toBeGreaterThan(a!.range!.start);
