@@ -24,6 +24,10 @@ const extensionConfig = {
   format: 'cjs',
   target: 'node18',
   external: ['vscode'],
+  // Prefer ESM builds of dependencies. jsonc-parser's UMD build uses an
+  // AMD-style dynamic require('./impl/format') that esbuild cannot statically
+  // inline, which breaks the bundle at runtime; its ESM build bundles cleanly.
+  mainFields: ['module', 'main'],
 };
 
 /** @type {import('esbuild').BuildOptions} */
