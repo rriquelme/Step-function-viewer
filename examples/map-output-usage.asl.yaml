@@ -1,0 +1,75 @@
+Comment: >-
+  Focused example of how a Map's OUTPUT (the array of item-processor results) is
+  consumed downstream: stored in a variable and then read as a whole list, by
+  index, aggregated, and filtered across several later states.
+QueryLanguage: JSONata
+StartAt: FetchRecords
+States:
+  FetchRecords:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: fetchRecords
+    Assign:
+      records: "{% $states.result.Payload.records %}"
+    Next: TransformRecords
+
+  TransformRecords:
+    Type: Map
+    Items: "{% $records %}"
+    ItemProcessor:
+      StartAt: Transform
+      States:
+        Transform:
+          Type: Task
+          Resource: arn:aws:states:::lambda:invoke
+          Arguments:
+            FunctionName: transform
+            Payload: "{% $states.context.Map.Item.Value %}"
+          # Each iteration's output object becomes one element of the Map result.
+          Output: "{% { 'id': $states.result.Payload.id, 'ok': $states.result.Payload.ok } %}"
+          End: true
+    # Capture the Map's array result so later states can consume it.
+    Assign:
+      transformed: "{% $states.result %}"
+    Next: Inspect
+
+  # Consumer 1: the whole list + an aggregate over it.
+  Inspect:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: inspect
+      Payload: "{% { 'all': $transformed, 'count': $count($transformed) } %}"
+    Next: CheckFirst
+
+  # Consumer 2: a single element by index.
+  CheckFirst:
+    Type: Choice
+    Choices:
+      - Condition: "{% $transformed[0].ok = true %}"
+        Next: HandleFailures
+    Default: HandleFailures
+
+  # Consumer 3: a filtered sub-list derived from the Map output.
+  HandleFailures:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: handleFailures
+      Payload: "{% { 'failed': $transformed[ok = false] } %}"
+    Assign:
+      failures: "{% $states.result.Payload.failed %}"
+    Next: Report
+
+  # Consumer 4: combine the original Map output and the derived list.
+  Report:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: report
+      Payload: "{% { 'transformed': $transformed, 'failures': $failures } %}"
+    Next: Done
+
+  Done:
+    Type: Succeed

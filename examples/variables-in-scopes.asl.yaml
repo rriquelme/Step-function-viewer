@@ -1,0 +1,97 @@
+Comment: >-
+  Variables created INSIDE a Map and a Parallel, then the collected results
+  delivered as LISTS to later states. Use this to see how the viewer shows a
+  variable defined in a nested scope and referenced outside it.
+QueryLanguage: JSONata
+StartAt: LoadOrders
+States:
+  LoadOrders:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: loadOrders
+    Assign:
+      orders: "{% $states.result.Payload.orders %}"
+    Next: PriceItems
+
+  # --- Map: each iteration creates per-item variables; the Map result is a list ---
+  PriceItems:
+    Type: Map
+    Items: "{% $orders %}"
+    ItemProcessor:
+      StartAt: PriceItem
+      States:
+        PriceItem:
+          Type: Task
+          Resource: arn:aws:states:::lambda:invoke
+          Arguments:
+            FunctionName: priceItem
+            Payload: "{% { 'sku': $states.context.Map.Item.Value.sku } %}"
+          Assign:
+            linePrice: "{% $states.result.Payload.price %}"
+          Next: TagItem
+        TagItem:
+          Type: Pass
+          Output: "{% { 'sku': $states.context.Map.Item.Value.sku, 'price': $linePrice } %}"
+          End: true
+    # The Map's array result is collected into a variable and used downstream as a list.
+    Assign:
+      pricedItems: "{% $states.result %}"
+    Next: Summarize
+
+  Summarize:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: summarize
+      Payload: "{% { 'items': $pricedItems, 'total': $sum($pricedItems.price) } %}"
+    Assign:
+      grandTotal: "{% $states.result.Payload.total %}"
+    Next: FanOut
+
+  # --- Parallel: each branch creates a variable; the Parallel result is a list ---
+  FanOut:
+    Type: Parallel
+    Branches:
+      - StartAt: ReserveStock
+        States:
+          ReserveStock:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Arguments:
+              FunctionName: reserveStock
+              Payload: "{% { 'items': $pricedItems } %}"
+            Assign:
+              reservationId: "{% $states.result.Payload.reservationId %}"
+            Next: ConfirmReservation
+          ConfirmReservation:
+            Type: Pass
+            Output: "{% { 'reservation': $reservationId } %}"
+            End: true
+      - StartAt: ChargeCustomer
+        States:
+          ChargeCustomer:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Arguments:
+              FunctionName: charge
+              Payload: "{% { 'amount': $grandTotal } %}"
+            Assign:
+              paymentId: "{% $states.result.Payload.paymentId %}"
+            Next: ConfirmPayment
+          ConfirmPayment:
+            Type: Pass
+            Output: "{% { 'payment': $paymentId } %}"
+            End: true
+    # The Parallel's array of branch outputs is collected into a list variable.
+    Assign:
+      fanOutResults: "{% $states.result %}"
+    Next: Finalize
+
+  Finalize:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: finalize
+      Payload: "{% { 'results': $fanOutResults, 'total': $grandTotal, 'count': $count($pricedItems) } %}"
+    End: true

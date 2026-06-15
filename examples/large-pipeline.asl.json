@@ -1,0 +1,670 @@
+{
+  "Comment": "Large (50+ state) JSONata pipeline for stress-testing the viewer.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Step01",
+  "States": {
+    "Step01": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage01Fn",
+        "Payload": "{% { 'prev': $states.input.seed, 'n': 1 } %}"
+      },
+      "Assign": {
+        "s01": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step02"
+    },
+    "Step02": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage02Fn",
+        "Payload": "{% { 'prev': $s01, 'n': 2 } %}"
+      },
+      "Assign": {
+        "s02": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step03"
+    },
+    "Step03": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage03Fn",
+        "Payload": "{% { 'prev': $s02, 'n': 3 } %}"
+      },
+      "Assign": {
+        "s03": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step04"
+    },
+    "Step04": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage04Fn",
+        "Payload": "{% { 'prev': $s03, 'n': 4 } %}"
+      },
+      "Assign": {
+        "s04": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step05"
+    },
+    "Step05": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage05Fn",
+        "Payload": "{% { 'prev': $s04, 'n': 5 } %}"
+      },
+      "Assign": {
+        "s05": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step06"
+    },
+    "Step06": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage06Fn",
+        "Payload": "{% { 'prev': $s05, 'n': 6 } %}"
+      },
+      "Assign": {
+        "s06": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step07"
+    },
+    "Step07": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage07Fn",
+        "Payload": "{% { 'prev': $s06, 'n': 7 } %}"
+      },
+      "Assign": {
+        "s07": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step08"
+    },
+    "Step08": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage08Fn",
+        "Payload": "{% { 'prev': $s07, 'n': 8 } %}"
+      },
+      "Assign": {
+        "s08": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step09"
+    },
+    "Step09": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage09Fn",
+        "Payload": "{% { 'prev': $s08, 'n': 9 } %}"
+      },
+      "Assign": {
+        "s09": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step10"
+    },
+    "Step10": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage10Fn",
+        "Payload": "{% { 'prev': $s09, 'n': 10 } %}"
+      },
+      "Assign": {
+        "s10": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step11"
+    },
+    "Step11": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage11Fn",
+        "Payload": "{% { 'prev': $s10, 'n': 11 } %}"
+      },
+      "Assign": {
+        "s11": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step12"
+    },
+    "Step12": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage12Fn",
+        "Payload": "{% { 'prev': $s11, 'n': 12 } %}"
+      },
+      "Assign": {
+        "s12": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step13"
+    },
+    "Step13": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage13Fn",
+        "Payload": "{% { 'prev': $s12, 'n': 13 } %}"
+      },
+      "Assign": {
+        "s13": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step14"
+    },
+    "Step14": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage14Fn",
+        "Payload": "{% { 'prev': $s13, 'n': 14 } %}"
+      },
+      "Assign": {
+        "s14": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step15"
+    },
+    "Step15": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "P15_B0_A",
+          "States": {
+            "P15_B0_A": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "branch0Fetch",
+                "Payload": "{% { 'prev': $s14 } %}"
+              },
+              "Assign": {
+                "branch0Raw": "{% $states.result.Payload %}"
+              },
+              "Next": "P15_B0_B"
+            },
+            "P15_B0_B": {
+              "Type": "Pass",
+              "Output": "{% { 'branch': 0, 'data': $branch0Raw } %}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "P15_B1_A",
+          "States": {
+            "P15_B1_A": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "branch1Fetch",
+                "Payload": "{% { 'prev': $s14 } %}"
+              },
+              "Assign": {
+                "branch1Raw": "{% $states.result.Payload %}"
+              },
+              "Next": "P15_B1_B"
+            },
+            "P15_B1_B": {
+              "Type": "Pass",
+              "Output": "{% { 'branch': 1, 'data': $branch1Raw } %}",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "P15_B2_A",
+          "States": {
+            "P15_B2_A": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "branch2Fetch",
+                "Payload": "{% { 'prev': $s14 } %}"
+              },
+              "Assign": {
+                "branch2Raw": "{% $states.result.Payload %}"
+              },
+              "Next": "P15_B2_B"
+            },
+            "P15_B2_B": {
+              "Type": "Pass",
+              "Output": "{% { 'branch': 2, 'data': $branch2Raw } %}",
+              "End": true
+            }
+          }
+        }
+      ],
+      "Assign": {
+        "s15": "{% $states.result %}"
+      },
+      "Next": "Step16"
+    },
+    "Step16": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage16Fn",
+        "Payload": "{% { 'prev': $s15, 'n': 16 } %}"
+      },
+      "Assign": {
+        "s16": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step17"
+    },
+    "Step17": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage17Fn",
+        "Payload": "{% { 'prev': $s16, 'n': 17 } %}"
+      },
+      "Assign": {
+        "s17": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step18"
+    },
+    "Step18": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage18Fn",
+        "Payload": "{% { 'prev': $s17, 'n': 18 } %}"
+      },
+      "Assign": {
+        "s18": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step19"
+    },
+    "Step19": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage19Fn",
+        "Payload": "{% { 'prev': $s18, 'n': 19 } %}"
+      },
+      "Assign": {
+        "s19": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step20"
+    },
+    "Step20": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage20Fn",
+        "Payload": "{% { 'prev': $s19, 'n': 20 } %}"
+      },
+      "Assign": {
+        "s20": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step21"
+    },
+    "Step21": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage21Fn",
+        "Payload": "{% { 'prev': $s20, 'n': 21 } %}"
+      },
+      "Assign": {
+        "s21": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step22"
+    },
+    "Step22": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage22Fn",
+        "Payload": "{% { 'prev': $s21, 'n': 22 } %}"
+      },
+      "Assign": {
+        "s22": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step23"
+    },
+    "Step23": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage23Fn",
+        "Payload": "{% { 'prev': $s22, 'n': 23 } %}"
+      },
+      "Assign": {
+        "s23": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step24"
+    },
+    "Step24": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage24Fn",
+        "Payload": "{% { 'prev': $s23, 'n': 24 } %}"
+      },
+      "Assign": {
+        "s24": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step25"
+    },
+    "Step25": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage25Fn",
+        "Payload": "{% { 'prev': $s24, 'n': 25 } %}"
+      },
+      "Assign": {
+        "s25": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step26"
+    },
+    "Step26": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage26Fn",
+        "Payload": "{% { 'prev': $s25, 'n': 26 } %}"
+      },
+      "Assign": {
+        "s26": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step27"
+    },
+    "Step27": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage27Fn",
+        "Payload": "{% { 'prev': $s26, 'n': 27 } %}"
+      },
+      "Assign": {
+        "s27": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step28"
+    },
+    "Step28": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage28Fn",
+        "Payload": "{% { 'prev': $s27, 'n': 28 } %}"
+      },
+      "Assign": {
+        "s28": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step29"
+    },
+    "Step29": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage29Fn",
+        "Payload": "{% { 'prev': $s28, 'n': 29 } %}"
+      },
+      "Assign": {
+        "s29": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step30"
+    },
+    "Step30": {
+      "Type": "Map",
+      "Items": "{% $s29.records %}",
+      "ItemProcessor": {
+        "StartAt": "M30_Validate",
+        "States": {
+          "M30_Validate": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "validateRecord",
+              "Payload": "{% $states.context.Map.Item.Value %}"
+            },
+            "Assign": {
+              "recordStatus": "{% $states.result.Payload.status %}"
+            },
+            "Next": "M30_Enrich"
+          },
+          "M30_Enrich": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "enrichRecord",
+              "Payload": "{% { 'status': $recordStatus } %}"
+            },
+            "Assign": {
+              "enriched": "{% $states.result.Payload %}"
+            },
+            "Next": "M30_Emit"
+          },
+          "M30_Emit": {
+            "Type": "Pass",
+            "Output": "{% { 'status': $recordStatus, 'record': $enriched } %}",
+            "End": true
+          }
+        }
+      },
+      "Assign": {
+        "s30": "{% $states.result %}"
+      },
+      "Next": "Step31"
+    },
+    "Step31": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage31Fn",
+        "Payload": "{% { 'prev': $s30, 'n': 31 } %}"
+      },
+      "Assign": {
+        "s31": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step32"
+    },
+    "Step32": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage32Fn",
+        "Payload": "{% { 'prev': $s31, 'n': 32 } %}"
+      },
+      "Assign": {
+        "s32": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step33"
+    },
+    "Step33": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage33Fn",
+        "Payload": "{% { 'prev': $s32, 'n': 33 } %}"
+      },
+      "Assign": {
+        "s33": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step34"
+    },
+    "Step34": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage34Fn",
+        "Payload": "{% { 'prev': $s33, 'n': 34 } %}"
+      },
+      "Assign": {
+        "s34": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step35"
+    },
+    "Step35": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage35Fn",
+        "Payload": "{% { 'prev': $s34, 'n': 35 } %}"
+      },
+      "Assign": {
+        "s35": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step36"
+    },
+    "Step36": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage36Fn",
+        "Payload": "{% { 'prev': $s35, 'n': 36 } %}"
+      },
+      "Assign": {
+        "s36": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step37"
+    },
+    "Step37": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage37Fn",
+        "Payload": "{% { 'prev': $s36, 'n': 37 } %}"
+      },
+      "Assign": {
+        "s37": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step38"
+    },
+    "Step38": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage38Fn",
+        "Payload": "{% { 'prev': $s37, 'n': 38 } %}"
+      },
+      "Assign": {
+        "s38": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step39"
+    },
+    "Step39": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage39Fn",
+        "Payload": "{% { 'prev': $s38, 'n': 39 } %}"
+      },
+      "Assign": {
+        "s39": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step40"
+    },
+    "Step40": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage40Fn",
+        "Payload": "{% { 'prev': $s39, 'n': 40 } %}"
+      },
+      "Assign": {
+        "s40": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step41"
+    },
+    "Step41": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage41Fn",
+        "Payload": "{% { 'prev': $s40, 'n': 41 } %}"
+      },
+      "Assign": {
+        "s41": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step42"
+    },
+    "Step42": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage42Fn",
+        "Payload": "{% { 'prev': $s41, 'n': 42 } %}"
+      },
+      "Assign": {
+        "s42": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step43"
+    },
+    "Step43": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage43Fn",
+        "Payload": "{% { 'prev': $s42, 'n': 43 } %}"
+      },
+      "Assign": {
+        "s43": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step44"
+    },
+    "Step44": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage44Fn",
+        "Payload": "{% { 'prev': $s43, 'n': 44 } %}"
+      },
+      "Assign": {
+        "s44": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Step45"
+    },
+    "Step45": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "stage45Fn",
+        "Payload": "{% { 'prev': $s44, 'n': 45 } %}"
+      },
+      "Assign": {
+        "s45": "{% $states.result.Payload.value %}"
+      },
+      "Next": "Aggregate"
+    },
+    "Aggregate": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "aggregate",
+        "Payload": "{% { 'parallel': $s15, 'mapped': $s30, 'last': $s45 } %}"
+      },
+      "Assign": {
+        "report": "{% $states.result.Payload.report %}"
+      },
+      "Next": "QualityGate"
+    },
+    "QualityGate": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $report.ok = true %}",
+          "Next": "Succeeded"
+        }
+      ],
+      "Default": "Failed"
+    },
+    "Succeeded": {
+      "Type": "Succeed"
+    },
+    "Failed": {
+      "Type": "Fail",
+      "Error": "QualityCheckFailed",
+      "Cause": "Report not ok"
+    }
+  }
+}
