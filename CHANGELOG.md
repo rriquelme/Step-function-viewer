@@ -3,7 +3,16 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.0.2]
+
+### Added
+
+- **Scope boxes:** each Parallel and Map now draws a labelled, translucent
+  boundary around all of its nested states, so the extent of a branch / item
+  processor is obvious at a glance. Parallel scopes are purple and Map scopes
+  are teal, with matching node borders and `branch` / `map` edge colors.
+
+## [0.0.1]
 
 ### Added
 

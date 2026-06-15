@@ -2,7 +2,7 @@
   "name": "step-function-viewer",
   "displayName": "Step Function Viewer",
   "description": "Interactive viewer for AWS Step Functions (JSONata) with per-state variable inspection and cross-state variable highlighting.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "step-function-viewer",
   "license": "MIT",
   "icon": "media/icon.png",

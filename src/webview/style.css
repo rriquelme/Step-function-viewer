@@ -1,5 +1,7 @@
 :root {
   color-scheme: light dark;
+  --scope-parallel-color: var(--vscode-charts-purple, #b180d7);
+  --scope-map-color: #1ba8a0;
 }
 
 html,
@@ -140,9 +142,11 @@ body {
 .node.type-Choice .node-box {
   stroke: var(--vscode-charts-yellow, #d7a000);
 }
-.node.type-Parallel .node-box,
-.node.type-Map .node-box {
+.node.type-Parallel .node-box {
   stroke: var(--vscode-charts-purple, #b180d7);
+}
+.node.type-Map .node-box {
+  stroke: var(--scope-map-color);
 }
 .node.type-Succeed .node-box {
   stroke: var(--vscode-charts-green, #4caf50);
@@ -168,6 +172,32 @@ body {
   opacity: 0.25;
 }
 
+/* --- scope boxes (Parallel / Map extent) --- */
+.scope-box {
+  fill-opacity: 0.07;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4 4;
+}
+.scope.parallel .scope-box {
+  stroke: var(--scope-parallel-color);
+  fill: var(--scope-parallel-color);
+}
+.scope.map .scope-box {
+  stroke: var(--scope-map-color);
+  fill: var(--scope-map-color);
+}
+.scope-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.scope.parallel .scope-label {
+  fill: var(--scope-parallel-color);
+}
+.scope.map .scope-label {
+  fill: var(--scope-map-color);
+}
+
 /* --- edges --- */
 .edge {
   fill: none;
@@ -185,9 +215,11 @@ body {
   stroke: var(--vscode-charts-red, #f14c4c);
   stroke-dasharray: 4 3;
 }
-.edge.kind-branch,
+.edge.kind-branch {
+  stroke: var(--scope-parallel-color);
+}
 .edge.kind-map {
-  stroke: var(--vscode-charts-purple, #b180d7);
+  stroke: var(--scope-map-color);
 }
 .arrow-head {
   fill: context-stroke;
@@ -419,6 +451,16 @@ button:hover {
   border-radius: 3px;
   flex: 0 0 auto;
   border: 2px solid transparent;
+}
+.legend .swatch.parallel {
+  border-color: var(--scope-parallel-color);
+  background: var(--scope-parallel-color);
+  opacity: 0.5;
+}
+.legend .swatch.map {
+  border-color: var(--scope-map-color);
+  background: var(--scope-map-color);
+  opacity: 0.5;
 }
 .legend .swatch.def {
   border-color: var(--vscode-charts-green, #4caf50);

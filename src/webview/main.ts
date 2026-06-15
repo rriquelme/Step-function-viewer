@@ -231,6 +231,8 @@ function renderLegend(): HTMLElement {
   const legend = el('div', 'legend');
   legend.append(heading('Legend'));
   const items: [string, string][] = [
+    ['swatch parallel', 'Parallel scope'],
+    ['swatch map', 'Map scope'],
     ['swatch def', 'Defines the selected variable'],
     ['swatch ref', 'References the selected variable'],
     ['swatch data', 'Data flow (definition → reference)'],

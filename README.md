@@ -20,7 +20,9 @@ referenced — a data-flow lens over your state machine.
 - **Variable inspector (the differentiator):** click a state to see the
   variables it *creates* and *uses*; click a variable to **highlight every
   state** that defines it (green) or references it (blue) and dim the rest.
-- Parses nested **Parallel** branches and **Map** item processors.
+- Parses nested **Parallel** branches and **Map** item processors, drawing a
+  labelled **scope box** around each (purple for Parallel, teal for Map) so the
+  nesting is obvious.
 - Detects the effective **QueryLanguage** (JSONata vs JSONPath).
 - Structural diagnostics in the Problems panel: missing `StartAt`, dangling
   transitions, unreachable states, states with neither `Next` nor `End`.

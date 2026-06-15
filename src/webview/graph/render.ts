@@ -38,7 +38,10 @@ export function renderInto(
 ): Map<string, SVGGElement> {
   viewport.replaceChildren();
 
-  // Edges first so nodes paint on top.
+  // Scope boxes behind everything, so the extent of each Parallel/Map is clear.
+  viewport.append(renderScopeBoxes(laid));
+
+  // Edges next so nodes paint on top.
   const edgeLayer = svgEl('g', { class: 'edge-layer' });
   for (const edge of laid.edges) {
     edgeLayer.append(...renderEdge(edge));
@@ -58,6 +61,65 @@ export function renderInto(
   viewport.append(svgEl('g', { class: 'data-flow-layer' }));
 
   return nodeEls;
+}
+
+/**
+ * Draw a translucent boxed region around each Parallel/Map container and all of
+ * its nested states, so the scope of each is obvious (à la Workflow Studio).
+ * Membership is derived from the scope-qualified node ids (e.g. "Map/item/Step").
+ */
+function renderScopeBoxes(laid: LaidOutGraph): SVGGElement {
+  const layer = svgEl('g', { class: 'scope-layer' }) as SVGGElement;
+  // Outer containers first so nested ones paint on top.
+  const containers = laid.nodes
+    .filter((n) => n.container)
+    .sort((a, b) => a.id.split('/').length - b.id.split('/').length);
+
+  for (const c of containers) {
+    const members = laid.nodes.filter((n) => n.id === c.id || n.id.startsWith(`${c.id}/`));
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const m of members) {
+      minX = Math.min(minX, m.x - m.width / 2);
+      maxX = Math.max(maxX, m.x + m.width / 2);
+      minY = Math.min(minY, m.y - m.height / 2);
+      maxY = Math.max(maxY, m.y + m.height / 2);
+    }
+    if (!Number.isFinite(minX)) {
+      continue;
+    }
+    const pad = 16;
+    const labelGap = 20;
+    const x = minX - pad;
+    const y = minY - pad - labelGap;
+    const w = maxX - minX + pad * 2;
+    const h = maxY - minY + pad * 2 + labelGap;
+    const kind = c.type === 'Map' ? 'map' : 'parallel';
+
+    const g = svgEl('g', { class: `scope ${kind}` });
+    g.append(
+      svgEl('rect', {
+        class: 'scope-box',
+        x: x.toFixed(1),
+        y: y.toFixed(1),
+        width: w.toFixed(1),
+        height: h.toFixed(1),
+        rx: '10',
+        ry: '10',
+      }),
+    );
+    const label = svgEl('text', {
+      class: 'scope-label',
+      x: (x + 12).toFixed(1),
+      y: (y + 15).toFixed(1),
+    });
+    label.textContent = `${c.type.toUpperCase()}: ${truncate(c.name, 28)}`;
+    g.append(label);
+    layer.append(g);
+  }
+  return layer;
 }
 
 /**
