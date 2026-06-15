@@ -17,6 +17,10 @@ export class Viewport {
   private panning = false;
   private startX = 0;
   private startY = 0;
+  // Last known container size, used to keep the view centered across resizes.
+  private lastW = 0;
+  private lastH = 0;
+  private readonly resizeObserver?: ResizeObserver;
 
   constructor(
     private readonly svg: SVGSVGElement,
@@ -26,6 +30,10 @@ export class Viewport {
     svg.addEventListener('mousedown', this.onMouseDown);
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mouseup', this.onMouseUp);
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(this.onResize);
+      this.resizeObserver.observe(svg);
+    }
   }
 
   dispose(): void {
@@ -33,6 +41,7 @@ export class Viewport {
     this.svg.removeEventListener('mousedown', this.onMouseDown);
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('mouseup', this.onMouseUp);
+    this.resizeObserver?.disconnect();
   }
 
   /** Scale and center the graph to fit the current container. */
@@ -51,8 +60,24 @@ export class Viewport {
     this.scale = clamp(scale, MIN_SCALE, MAX_SCALE);
     this.tx = (rect.width - bounds.width * this.scale) / 2;
     this.ty = (rect.height - bounds.height * this.scale) / 2;
+    this.lastW = rect.width;
+    this.lastH = rect.height;
     this.apply();
   }
+
+  /** On container resize, keep whatever was centered in view (don't jump away). */
+  private readonly onResize = (): void => {
+    const rect = this.svg.getBoundingClientRect();
+    if (this.lastW > 0 && this.lastH > 0 && (rect.width !== this.lastW || rect.height !== this.lastH)) {
+      const centerX = (this.lastW / 2 - this.tx) / this.scale;
+      const centerY = (this.lastH / 2 - this.ty) / this.scale;
+      this.tx = rect.width / 2 - centerX * this.scale;
+      this.ty = rect.height / 2 - centerY * this.scale;
+      this.apply();
+    }
+    this.lastW = rect.width;
+    this.lastH = rect.height;
+  };
 
   reset(): void {
     this.scale = 1;

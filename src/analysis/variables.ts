@@ -2,8 +2,8 @@
 // states reference them (JSONata expressions). Produces both a per-variable
 // index (for cross-state highlighting) and a per-state summary (for the
 // click-a-state menu). This is the core of the extension's differentiator.
-import type { Graph } from '../asl/graph';
-import { extractVariableReferences } from '../asl/jsonata';
+import type { Graph, GraphNode } from '../asl/graph';
+import { extractVariableReferences, referencesMapItem } from '../asl/jsonata';
 import type { RangeResolver, SourceRange } from '../asl/parser';
 import { resolveByPath } from '../asl/resolve';
 import type { CatchRule, State, StateMachine } from '../asl/types';
@@ -50,7 +50,9 @@ export function analyzeVariables(
   rangeAt: RangeResolver,
 ): VariableAnalysis {
   const index = new Map<string, VariableInfo>();
-  const perState: Record<string, StateVariableSummary> = {};
+  const sets = new Map<string, { created: Set<string>; used: Set<string> }>();
+  const nodeById = new Map(graph.nodes.map((n) => [n.id, n]));
+  const mapItemReaders = new Map<string, GraphNode[]>();
 
   const ensure = (name: string): VariableInfo => {
     let info = index.get(name);
@@ -60,6 +62,15 @@ export function analyzeVariables(
     }
     return info;
   };
+  const setsFor = (id: string) => {
+    let s = sets.get(id);
+    if (!s) {
+      s = { created: new Set(), used: new Set() };
+      sets.set(id, s);
+    }
+    return s;
+  };
+  const mapItemVarName = (mapId: string) => `${nodeById.get(mapId)?.name ?? mapId}.item`;
 
   for (const node of graph.nodes) {
     const state = resolveByPath(machine, node.jsonPath) as State | undefined;
@@ -67,8 +78,7 @@ export function analyzeVariables(
       continue;
     }
 
-    const created = new Set<string>();
-    const used = new Set<string>();
+    const { created, used } = setsFor(node.id);
 
     for (const { name, path } of definitionsOf(state)) {
       created.add(name);
@@ -90,11 +100,68 @@ export function analyzeVariables(
       });
     }
 
-    perState[node.id] = { created: [...created].sort(), used: [...used].sort() };
+    // The current Map iteration item (context), attributed to its enclosing Map.
+    const mapId = enclosingMapId(node.id);
+    if (mapId !== undefined && stateReferencesMapItem(state)) {
+      used.add(mapItemVarName(mapId));
+      (mapItemReaders.get(mapId) ?? mapItemReaders.set(mapId, []).get(mapId)!).push(node);
+    }
+  }
+
+  // Synthesize one "<Map>.item" variable per Map whose items are read: the Map
+  // "defines" the item (green), reader states "reference" it (blue).
+  for (const [mapId, readers] of mapItemReaders) {
+    const mapNode = nodeById.get(mapId);
+    const name = mapItemVarName(mapId);
+    const info = ensure(name);
+    info.definitions.push({
+      nodeId: mapId,
+      stateName: mapNode?.name ?? mapId,
+      field: 'Items',
+      range: mapNode ? rangeAt([...mapNode.jsonPath, 'Items']) : undefined,
+    });
+    setsFor(mapId).created.add(name);
+    for (const reader of readers) {
+      info.references.push({ nodeId: reader.id, stateName: reader.name, field: 'Map.Item' });
+    }
+  }
+
+  const perState: Record<string, StateVariableSummary> = {};
+  for (const [id, { created, used }] of sets) {
+    perState[id] = { created: [...created].sort(), used: [...used].sort() };
   }
 
   const variables = [...index.values()].sort((a, b) => a.name.localeCompare(b.name));
   return { variables, perState };
+}
+
+/** The id of the nearest enclosing Map (the prefix before the last "/item/"). */
+function enclosingMapId(nodeId: string): string | undefined {
+  const idx = nodeId.lastIndexOf('/item/');
+  return idx >= 0 ? nodeId.slice(0, idx) : undefined;
+}
+
+/** True when any of a state's own fields read the Map iteration item. */
+function stateReferencesMapItem(state: State): boolean {
+  let found = false;
+  const walk = (value: unknown): void => {
+    if (found) {
+      return;
+    }
+    if (typeof value === 'string') {
+      found = referencesMapItem(value);
+    } else if (Array.isArray(value)) {
+      value.forEach(walk);
+    } else if (value && typeof value === 'object') {
+      Object.values(value).forEach(walk);
+    }
+  };
+  for (const [field, value] of Object.entries(state)) {
+    if (!STRUCTURAL_KEYS.has(field)) {
+      walk(value);
+    }
+  }
+  return found;
 }
 
 /** Variable names created by a state's Assign block(s), with their relative path. */

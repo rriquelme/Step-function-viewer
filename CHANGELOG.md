@@ -3,6 +3,24 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.9]
+
+### Added
+
+- **Map iteration item as a variable.** References to the current item
+  (`$states.context.Map.Item.Value` / `.Index`, or legacy `$$.Map.Item.*`) are
+  now surfaced as a synthetic `<Map>.item` variable: the Map "defines" it and the
+  states that read it "reference" it, so selecting it highlights (and draws
+  data-flow edges for) the iteration. Variables assigned inside Map/Parallel
+  scopes were already tracked per nested state; this fills the last gap.
+- New `examples/map-iteration.asl.yaml` demonstrating iteration-local variables,
+  the item context, and an outer variable used inside the processor.
+
+### Fixed
+
+- **View no longer jumps on resize.** Resizing the window/editor (e.g. toggling
+  split view) keeps whatever was centered in view instead of losing the graph.
+
 ## [0.0.8]
 
 ### Changed

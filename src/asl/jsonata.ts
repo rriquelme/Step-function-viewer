@@ -39,6 +39,15 @@ export function isJSONataExpression(raw: string): boolean {
   return /\{%[\s\S]*?%\}/.test(raw);
 }
 
+/**
+ * True when the expression reads the current Map iteration item — JSONata
+ * `$states.context.Map.Item.*` or the legacy `$$.Map.Item.*`. These are not user
+ * variables, but they are worth surfacing as the Map's "item" data flow.
+ */
+export function referencesMapItem(raw: string): boolean {
+  return /\$states\.context\.Map\.Item\b/.test(raw) || /\$\$\.Map\.Item\b/.test(raw);
+}
+
 function extractExpressionBodies(raw: string): string[] {
   const bodies: string[] = [];
   const re = /\{%([\s\S]*?)%\}/g;

@@ -16,6 +16,7 @@ const VALID = [
   'jsonpath-legacy.asl.json',
   'variables-in-scopes.asl.yaml',
   'map-output-usage.asl.yaml',
+  'map-iteration.asl.yaml',
   'large-pipeline.asl.json',
 ];
 
@@ -54,5 +55,21 @@ describe('bundled examples', () => {
   it('large-pipeline has more than 50 states', () => {
     const model = read('large-pipeline.asl.json');
     expect(model.nodes.length).toBeGreaterThan(50);
+  });
+
+  it('map-iteration surfaces iteration-local vars and a synthetic <Map>.item', () => {
+    const model = read('map-iteration.asl.yaml');
+    const names = model.variables.map((v) => v.name);
+    // Iteration-local variables assigned inside the item processor:
+    expect(names).toContain('sku');
+    expect(names).toContain('linePrice');
+    // The synthetic Map item variable: defined by the Map, read by ReadLine.
+    const item = model.variables.find((v) => v.name === 'PriceLines.item');
+    expect(item).toBeDefined();
+    expect(item!.definitions.map((d) => d.stateName)).toContain('PriceLines');
+    expect(item!.references.map((r) => r.stateName)).toContain('ReadLine');
+    // An outer variable used inside the Map:
+    const taxRate = model.variables.find((v) => v.name === 'taxRate')!;
+    expect(taxRate.references.some((r) => r.nodeId.includes('/item/'))).toBe(true);
   });
 });

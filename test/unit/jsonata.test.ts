@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { extractVariableReferences, isJSONataExpression } from '../../src/asl/jsonata';
+import {
+  extractVariableReferences,
+  isJSONataExpression,
+  referencesMapItem,
+} from '../../src/asl/jsonata';
 
 describe('extractVariableReferences', () => {
   it('returns nothing for non-JSONata strings', () => {
@@ -37,5 +41,18 @@ describe('extractVariableReferences', () => {
     const refs = extractVariableReferences('{% ($total := $price * 2; $total) %}');
     expect(refs).toContain('price');
     expect(refs).not.toContain('total');
+  });
+
+  it('does not treat the Map item context as a user variable', () => {
+    expect(extractVariableReferences('{% $states.context.Map.Item.Value.sku %}')).toEqual([]);
+  });
+});
+
+describe('referencesMapItem', () => {
+  it('detects JSONata and legacy Map item references', () => {
+    expect(referencesMapItem('{% $states.context.Map.Item.Value %}')).toBe(true);
+    expect(referencesMapItem('{% $states.context.Map.Item.Index %}')).toBe(true);
+    expect(referencesMapItem('$$.Map.Item.Value')).toBe(true);
+    expect(referencesMapItem('{% $orders %}')).toBe(false);
   });
 });

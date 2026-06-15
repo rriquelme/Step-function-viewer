@@ -1,0 +1,59 @@
+Comment: >-
+  Map iteration internals: the per-item context value/index, iteration-local
+  variables assigned from it, and an OUTER variable used inside the item
+  processor. Open this to see how the viewer surfaces "<Map>.item" (the Map feeds
+  its item to the reader states) alongside normal variables.
+QueryLanguage: JSONata
+StartAt: LoadCart
+States:
+  LoadCart:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: loadCart
+    Assign:
+      taxRate: "{% $states.result.Payload.taxRate %}"
+      lines: "{% $states.result.Payload.lines %}"
+    Next: PriceLines
+
+  PriceLines:
+    Type: Map
+    # The iterable is the outer variable $lines.
+    Items: "{% $lines %}"
+    ItemProcessor:
+      StartAt: ReadLine
+      States:
+        ReadLine:
+          Type: Pass
+          # Read the current iteration item + index into iteration-local variables.
+          Assign:
+            sku: "{% $states.context.Map.Item.Value.sku %}"
+            qty: "{% $states.context.Map.Item.Value.qty %}"
+            lineNo: "{% $states.context.Map.Item.Index %}"
+          Next: PriceLine
+        PriceLine:
+          Type: Task
+          Resource: arn:aws:states:::lambda:invoke
+          Arguments:
+            FunctionName: priceLine
+            # Uses iteration-local vars ($sku, $qty) and an outer var ($taxRate).
+            Payload: "{% { 'sku': $sku, 'qty': $qty, 'taxRate': $taxRate } %}"
+          Assign:
+            linePrice: "{% $states.result.Payload.price %}"
+          Next: EmitLine
+        EmitLine:
+          Type: Pass
+          Output: "{% { 'line': $lineNo, 'sku': $sku, 'price': $linePrice } %}"
+          End: true
+    # The Map result (list of EmitLine outputs) is delivered downstream.
+    Assign:
+      pricedLines: "{% $states.result %}"
+    Next: Total
+
+  Total:
+    Type: Task
+    Resource: arn:aws:states:::lambda:invoke
+    Arguments:
+      FunctionName: total
+      Payload: "{% { 'lines': $pricedLines } %}"
+    End: true
