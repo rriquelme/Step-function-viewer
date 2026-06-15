@@ -23,6 +23,13 @@ async function waitFor<T>(
 }
 
 describe('Step Function Viewer extension', () => {
+  before(async () => {
+    // The extension activates lazily (custom editor / command). Force activation
+    // so the diagnostics listener is registered before we open documents.
+    const ext = vscode.extensions.getExtension('step-function-viewer.step-function-viewer');
+    await ext?.activate();
+  });
+
   it('registers the open command', async () => {
     const commands = await vscode.commands.getCommands(true);
     assert.ok(
