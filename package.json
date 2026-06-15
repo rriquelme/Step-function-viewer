@@ -1,0 +1,109 @@
+{
+  "name": "step-function-viewer",
+  "displayName": "Step Function Viewer",
+  "description": "Interactive viewer for AWS Step Functions (JSONata) with per-state variable inspection and cross-state variable highlighting.",
+  "version": "0.0.1",
+  "publisher": "step-function-viewer",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=18"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "aws",
+    "step functions",
+    "state machine",
+    "asl",
+    "jsonata"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "stepFunctionViewer.editor",
+        "displayName": "Step Function Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.asl.json"
+          },
+          {
+            "filenamePattern": "*.asl"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "commands": [
+      {
+        "command": "stepFunctionViewer.open",
+        "title": "Open Step Function Viewer",
+        "category": "Step Functions"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "stepFunctionViewer.open",
+          "when": "resourceLangId == json || resourceExtname == .asl"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "stepFunctionViewer.open",
+          "when": "resourceLangId == json || resourceExtname == .asl",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Step Function Viewer",
+      "properties": {
+        "stepFunctionViewer.layoutDirection": {
+          "type": "string",
+          "enum": [
+            "TB",
+            "LR"
+          ],
+          "default": "TB",
+          "description": "Graph layout direction: top-to-bottom (TB) or left-to-right (LR)."
+        },
+        "stepFunctionViewer.autoOpen": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically open the viewer when an ASL file is opened."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "package": "vsce package",
+    "vscode:prepublish": "node esbuild.js --production"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^2.31.0",
+    "esbuild": "^0.23.0",
+    "eslint": "^9.9.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}

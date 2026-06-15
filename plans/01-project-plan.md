@@ -23,42 +23,49 @@
 
 ---
 
+> **Progress (2026-06-15):** Phases 0–2 implemented. Scaffolding, the custom
+> editor with document↔webview sync and click-to-source, and the full ASL
+> parse → graph → validate pipeline are in place and green (typecheck, lint,
+> 7 unit tests, two-bundle build). Remaining within these phases: the
+> integration-test harness (0.4), wiring diagnostics into the VS Code Problems
+> panel (2.4), and the `autoOpen` setting behavior (1.4).
+
 ## Phase 0 — Project Scaffolding & Tooling
 
-- [ ] **0.1 Initialize the Node/TypeScript project**
+- [x] **0.1 Initialize the Node/TypeScript project**
   - Create `package.json` with VS Code extension manifest fields
     (`engines.vscode`, `main`, `contributes`, `activationEvents`).
   - Add `tsconfig.json` (strict mode, `module: Node16`/`ESNext`, source maps).
   - Choose package manager (npm) and pin Node version in `.nvmrc`.
-- [ ] **0.2 Set up the build pipeline**
+- [x] **0.2 Set up the build pipeline**
   - Use `esbuild` (fast) to bundle the extension host code and the webview
     code as two separate bundles (`out/extension.js`, `out/webview.js`).
   - Add `npm run build`, `npm run watch`, `npm run package` scripts.
-- [ ] **0.3 Linting, formatting, and editor config**
+- [x] **0.3 Linting, formatting, and editor config**
   - ESLint + `@typescript-eslint`, Prettier, `.editorconfig`.
   - Add `npm run lint` and a pre-commit check.
 - [ ] **0.4 Testing harness**
   - `@vscode/test-electron` (or `@vscode/test-cli`) for integration tests,
     plus a unit-test runner (Vitest/Jest) for pure logic (parser/analyzer).
-- [ ] **0.5 Repo hygiene**
+- [x] **0.5 Repo hygiene**
   - `.gitignore` (node_modules, out, *.vsix), `.vscodeignore` (trim the
     published package), `LICENSE`, and a starter `README.md`.
   - Add `.vscode/launch.json` (Extension Development Host) and
     `.vscode/tasks.json` (watch build) for F5 debugging.
-- [ ] **0.6 CI**
+- [x] **0.6 CI**
   - GitHub Actions workflow: install, lint, typecheck, test, build `.vsix`.
 
 ---
 
 ## Phase 1 — Extension Activation & Custom Editor
 
-- [ ] **1.1 Define activation & file association**
+- [x] **1.1 Define activation & file association**
   - Register a Custom Text Editor for `*.asl.json`, `*.asl` and a command to
     open the viewer for the currently active JSON file ("Open Step Function
     Viewer").
   - `activationEvents`: `onCustomEditor`, `onCommand`, optionally on language
     `json` when the document looks like an ASL state machine.
-- [ ] **1.2 Implement the `CustomTextEditorProvider`**
+- [x] **1.2 Implement the `CustomTextEditorProvider`**
   - Create the webview, set CSP-safe HTML, wire `webview.options` with a
     `localResourceRoots` for bundled assets.
   - Sync document <-> webview: on document change, re-parse and post the model
@@ -75,16 +82,16 @@
 
 ## Phase 2 — ASL Parsing & Model
 
-- [ ] **2.1 ASL type model**
+- [x] **2.1 ASL type model**
   - Define TypeScript types for the State Machine and all state types:
     `Task`, `Choice`, `Parallel`, `Map`, `Pass`, `Wait`, `Succeed`, `Fail`.
   - Model `Next`, `End`, `Catch`, `Retry`, `Branches` (Parallel),
     `ItemProcessor`/`Iterator` (Map), `Default`/`Choices` (Choice).
-- [ ] **2.2 Robust JSON parsing**
+- [x] **2.2 Robust JSON parsing**
   - Parse with a tolerant JSON parser that yields **source positions** (e.g.
     `jsonc-parser`) so we can map graph nodes back to document ranges for
     click-to-source navigation and error squiggles.
-- [ ] **2.3 Build the graph model**
+- [x] **2.3 Build the graph model**
   - Convert states + transitions into a normalized graph: nodes (with type,
     name, range) and edges (with kind: `next` | `choice` | `default` |
     `catch` | `branch-start`). Handle nested scopes (Parallel branches, Map
@@ -92,7 +99,7 @@
 - [ ] **2.4 Validation & diagnostics**
   - Detect: missing `StartAt`, dangling `Next` targets, unreachable states,
     states with neither `Next` nor `End`. Surface as VS Code diagnostics.
-- [ ] **2.5 Query-language detection**
+- [x] **2.5 Query-language detection**
   - Read `QueryLanguage` at machine and state level; flag JSONata vs JSONPath
     so the analyzer uses the correct extractor. Primary target: JSONata.
 

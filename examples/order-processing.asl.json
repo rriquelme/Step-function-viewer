@@ -1,0 +1,90 @@
+{
+  "Comment": "Sample JSONata state machine exercising variables, Choice, Map, and Parallel.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "ValidateOrder",
+  "States": {
+    "ValidateOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "validateOrder",
+        "Payload": "{% $states.input %}"
+      },
+      "Assign": {
+        "orderId": "{% $states.input.orderId %}",
+        "customerTier": "{% $states.input.customer.tier %}"
+      },
+      "Next": "IsPriority"
+    },
+    "IsPriority": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $customerTier = 'gold' %}",
+          "Next": "PriorityFulfillment"
+        }
+      ],
+      "Default": "StandardFulfillment"
+    },
+    "PriorityFulfillment": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "ReserveStock",
+          "States": {
+            "ReserveStock": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "reserveStock",
+                "Payload": "{% { 'orderId': $orderId } %}"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "NotifyCustomer",
+          "States": {
+            "NotifyCustomer": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Arguments": {
+                "FunctionName": "notify",
+                "Payload": "{% { 'orderId': $orderId, 'tier': $customerTier } %}"
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "ShipItems"
+    },
+    "StandardFulfillment": {
+      "Type": "Pass",
+      "Next": "ShipItems"
+    },
+    "ShipItems": {
+      "Type": "Map",
+      "Items": "{% $states.input.items %}",
+      "ItemProcessor": {
+        "StartAt": "ShipItem",
+        "States": {
+          "ShipItem": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "ship",
+              "Payload": "{% { 'orderId': $orderId, 'item': $states.context.Map.Item.Value } %}"
+            },
+            "End": true
+          }
+        }
+      },
+      "Next": "Done"
+    },
+    "Done": {
+      "Type": "Succeed"
+    }
+  }
+}
