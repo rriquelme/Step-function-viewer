@@ -1,0 +1,14 @@
+{
+  "Comment": "Intentionally flawed machine to demonstrate diagnostics: a dangling Next target and an unreachable state.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Next": "DoesNotExist"
+    },
+    "Orphan": {
+      "Type": "Succeed"
+    }
+  }
+}

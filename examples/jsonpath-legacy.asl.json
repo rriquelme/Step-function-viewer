@@ -1,0 +1,18 @@
+{
+  "Comment": "Legacy JSONPath state machine (no QueryLanguage set). The viewer renders the graph; variable analysis is JSONata-only, so no user variables are reported here.",
+  "StartAt": "Transform",
+  "States": {
+    "Transform": {
+      "Type": "Pass",
+      "Parameters": {
+        "id.$": "$.orderId",
+        "total.$": "$.amount"
+      },
+      "ResultPath": "$.order",
+      "Next": "Finish"
+    },
+    "Finish": {
+      "Type": "Succeed"
+    }
+  }
+}

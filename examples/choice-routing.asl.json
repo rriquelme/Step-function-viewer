@@ -1,0 +1,37 @@
+{
+  "Comment": "Choice routing driven entirely by assigned variables.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Classify",
+  "States": {
+    "Classify": {
+      "Type": "Pass",
+      "Assign": {
+        "score": "{% $states.input.score %}",
+        "region": "{% $states.input.region %}"
+      },
+      "Next": "Route"
+    },
+    "Route": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $score >= 90 and $region = 'EU' %}",
+          "Next": "PremiumEU"
+        },
+        {
+          "Condition": "{% $score >= 90 %}",
+          "Next": "Premium"
+        },
+        {
+          "Condition": "{% $score < 50 %}",
+          "Next": "Review"
+        }
+      ],
+      "Default": "Standard"
+    },
+    "PremiumEU": { "Type": "Succeed" },
+    "Premium": { "Type": "Succeed" },
+    "Standard": { "Type": "Succeed" },
+    "Review": { "Type": "Fail", "Error": "NeedsReview", "Cause": "Low score" }
+  }
+}

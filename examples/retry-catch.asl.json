@@ -1,0 +1,48 @@
+{
+  "Comment": "Task with Retry and Catch; the Catch path assigns and reads variables.",
+  "QueryLanguage": "JSONata",
+  "StartAt": "CallApi",
+  "States": {
+    "CallApi": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "callApi",
+        "Payload": "{% { 'attempt': $states.context.State.RetryCount } %}"
+      },
+      "Assign": {
+        "lastResponse": "{% $states.result.Payload %}"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Assign": {
+            "errorInfo": "{% $states.errorOutput %}"
+          },
+          "Next": "HandleFailure"
+        }
+      ],
+      "Next": "Done"
+    },
+    "HandleFailure": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "notifyOps",
+        "Payload": "{% { 'error': $errorInfo, 'last': $lastResponse } %}"
+      },
+      "End": true
+    },
+    "Done": {
+      "Type": "Succeed"
+    }
+  }
+}

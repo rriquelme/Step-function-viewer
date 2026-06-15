@@ -25,6 +25,34 @@ referenced — a data-flow lens over your state machine.
 - Click-to-source: reveal any state's JSON in the document (node double-click or
   the sidebar "source" button).
 
+## Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `stepFunctionViewer.layoutDirection` | `TB` | Graph layout direction: top-to-bottom (`TB`) or left-to-right (`LR`). |
+| `stepFunctionViewer.autoOpen` | `false` | Automatically open the viewer when an ASL file is activated. |
+
+## Supported ASL
+
+- State types: `Task`, `Choice`, `Parallel`, `Map`, `Pass`, `Wait`, `Succeed`,
+  `Fail`.
+- Transitions: `Next`, `End`, Choice `Choices`/`Default`, `Catch`, and entry
+  into `Parallel` branches and `Map` item processors (`ItemProcessor` /
+  `Iterator`).
+- Query language: **JSONata** is the target for variable analysis. JSONPath
+  machines render but report no user variables.
+
+## Examples
+
+The [`examples/`](examples/) folder contains state machines for trying the
+viewer:
+
+- `order-processing.asl.json` — Parallel + Map + Choice with shared variables.
+- `retry-catch.asl.json` — Retry/Catch with variables assigned on the error path.
+- `choice-routing.asl.json` — Choice routing driven by assigned variables.
+- `diagnostics-demo.asl.json` — dangling transition + unreachable state.
+- `jsonpath-legacy.asl.json` — a JSONPath machine (renders, no variables).
+
 ## Getting started (development)
 
 ```bash

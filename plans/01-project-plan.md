@@ -23,20 +23,21 @@
 
 ---
 
-> **Progress (2026-06-15):** Phases 0–4 implemented (4.5 shipped as a flat
-> layout — see note there), plus the Phase 5 differentiator on the graph.
-> Highlights: scaffolding + CI; custom editor with document↔webview sync,
-> click-to-source, `autoOpen`, and Problems-panel diagnostics; the ASL parse →
-> graph → validate pipeline; JSONata variable analysis (definitions, references,
-> per-state summaries, cross-state index); and an **interactive SVG graph**
-> (dagre layout, pan/zoom/fit, per-type nodes, per-kind edges with arrowheads
-> and labels) where clicking a state shows its variables and clicking a variable
-> highlights every defining (green) / referencing (blue) state and dims the
-> rest. Green: typecheck, lint, **27 unit tests** (incl. jsdom render smoke
-> tests), two-bundle build. The integration-test harness (0.4) runs in CI (it
-> downloads VS Code, which the dev sandbox blocks). Still ahead: precise
-> per-expression source ranges (3.1), graph-native data-flow edges (5.4), and
-> Phases 6–7 (samples/docs, packaging/release).
+> **Progress (2026-06-15):** Phases 0–7 substantially complete. The extension
+> ships a custom editor with an **interactive SVG graph** (dagre layout,
+> pan/zoom/fit, per-type nodes, labeled per-kind edges), the **variable
+> inspector** differentiator (click a state → its created/used variables; click
+> a variable → highlight defining/referencing states), Problems-panel
+> diagnostics, click-to-source, and settings. A sample library, docs
+> (`README`, `CONTRIBUTING`, `docs/architecture.md`, `CHANGELOG`), a generated
+> icon, integration tests, and CI/release workflows are in place; `vsce package`
+> produces a ~108 KB `.vsix`. Green: typecheck, lint, **27 unit tests**
+> (incl. jsdom render tests), build, packaging. **Pending:** real Marketplace
+> credentials to publish (7.3), README screenshots/GIFs (can't capture in the
+> sandbox), precise per-expression source ranges (3.1), and the optional
+> graph-native data-flow edges (5.4). Note: the integration tests and the
+> running graph couldn't be exercised in this network-restricted sandbox (no
+> VS Code download / display); they run in CI and locally.
 
 ## Phase 0 — Project Scaffolding & Tooling
 
@@ -223,16 +224,16 @@
 
 ## Phase 6 — Quality, Samples, and Docs
 
-- [ ] **6.1 Sample ASL library**
+- [x] **6.1 Sample ASL library**
   - Ship `examples/` with JSONata state machines exercising Assign, Map,
     Parallel, Choice, Catch/Retry, and rich variable usage for manual testing.
-- [ ] **6.2 Integration tests**
+- [x] **6.2 Integration tests**
   - Open a sample in the Extension Host, assert the model loads, selection and
     highlight messages flow, and click-to-source resolves correctly.
-- [ ] **6.3 Error handling**
+- [x] **6.3 Error handling**
   - Graceful messaging for invalid JSON, non-ASL files, and unsupported
     JSONPath-only documents.
-- [ ] **6.4 Documentation**
+- [x] **6.4 Documentation**
   - README with screenshots/GIFs of the variable-highlight feature, supported
     ASL subset, settings, and a "known limitations" section.
   - `CONTRIBUTING.md` and architecture notes (`docs/architecture.md`).
@@ -241,15 +242,18 @@
 
 ## Phase 7 — Packaging & Release
 
-- [ ] **7.1 Package the extension**
+- [x] **7.1 Package the extension**
   - `vsce package` to produce a `.vsix`; verify `.vscodeignore` trims size.
-- [ ] **7.2 Marketplace metadata**
+- [x] **7.2 Marketplace metadata**
   - Icon, categories (`Visualization`, `Other`), keywords, `publisher`,
     gallery banner, `CHANGELOG.md`.
-- [ ] **7.3 Publish**
-  - Set up `vsce`/`ovsx` tokens in CI; publish to VS Code Marketplace and
-    Open VSX. Tag the release in git.
-- [ ] **7.4 Versioning**
+- [~] **7.3 Publish**
+  - Release workflow (`.github/workflows/release.yml`) is in place: on a `v*`
+    tag it builds, packages, publishes to the VS Code Marketplace and Open VSX
+    (guarded on `VSCE_PAT` / `OVSX_PAT` secrets), and attaches the `.vsix` to the
+    GitHub release. **Actual publishing is pending** real publisher credentials
+    and a `publisher` id registered with the Marketplace.
+- [x] **7.4 Versioning**
   - Adopt SemVer; automate changelog and version bump in the release workflow.
 
 ---

@@ -1,0 +1,38 @@
+name: Release
+
+# Publishes the extension when a version tag (e.g. v0.1.0) is pushed.
+# Requires repository secrets:
+#   VSCE_PAT  - VS Code Marketplace personal access token
+#   OVSX_PAT  - Open VSX token (optional)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run package
+      - name: Publish to VS Code Marketplace
+        if: ${{ env.VSCE_PAT != '' }}
+        run: npx vsce publish --packagePath *.vsix
+      - name: Publish to Open VSX
+        if: ${{ env.OVSX_PAT != '' }}
+        run: npx ovsx publish *.vsix -p "$OVSX_PAT"
+      - name: Attach VSIX to the GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'

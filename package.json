@@ -5,6 +5,19 @@
   "version": "0.0.1",
   "publisher": "step-function-viewer",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rriquelme/step-function-viewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rriquelme/step-function-viewer/issues"
+  },
+  "homepage": "https://github.com/rriquelme/step-function-viewer#readme",
+  "galleryBanner": {
+    "color": "#1e2330",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.90.0",
     "node": ">=18"
@@ -91,6 +104,7 @@
     "compile-tests": "tsc -p tsconfig.test.json",
     "pretest:integration": "npm run compile-tests && npm run build",
     "test:integration": "vscode-test",
+    "make-icon": "node scripts/make-icon.mjs",
     "package": "vsce package",
     "vscode:prepublish": "node esbuild.js --production"
   },

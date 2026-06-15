@@ -4,6 +4,9 @@ src/**
 test/**
 examples/**
 plans/**
+docs/**
+scripts/**
+CONTRIBUTING.md
 node_modules/**
 out-test/**
 **/*.test.ts
