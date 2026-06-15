@@ -2,7 +2,8 @@
 // ranges so the editor can surface squiggles and a problems list.
 import type { Graph } from './graph';
 import { type SourceRange, rangeForPath } from './parser';
-import type { StateMachine } from './types';
+import { resolveByPath } from './resolve';
+import type { State, StateMachine } from './types';
 import type { Node } from 'jsonc-parser';
 
 export type DiagnosticSeverity = 'error' | 'warning';
@@ -62,7 +63,7 @@ export function validateStateMachine(
     if (TERMINAL_TYPES.has(node.type) || CHOICE_TYPES.has(node.type) || node.container) {
       continue;
     }
-    const state = resolveState(machine, node.jsonPath);
+    const state = resolveByPath(machine, node.jsonPath) as State | undefined;
     if (state && !('Next' in state && state.Next) && !state.End) {
       diagnostics.push({
         message: `State "${node.name}" has neither "Next" nor "End": true.`,
@@ -112,18 +113,6 @@ function computeReachable(graph: Graph): Set<string> {
     }
   }
   return reachable;
-}
-
-function resolveState(machine: StateMachine, jsonPath: (string | number)[]) {
-  let current: unknown = machine;
-  for (const key of jsonPath) {
-    if (current && typeof current === 'object') {
-      current = (current as Record<string | number, unknown>)[key];
-    } else {
-      return undefined;
-    }
-  }
-  return current as StateMachine['States'][string] | undefined;
 }
 
 /** The final path segment of a scoped node id, for user-facing messages. */

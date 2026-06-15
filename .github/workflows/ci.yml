@@ -19,3 +19,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: xvfb-run -a npm run test:integration
+        if: runner.os == 'Linux'

@@ -5,8 +5,11 @@ test/**
 examples/**
 plans/**
 node_modules/**
+out-test/**
 **/*.test.ts
 **/tsconfig.json
+**/tsconfig.test.json
+.vscode-test.mjs
 **/eslint.config.mjs
 **/.prettierrc.json
 **/.editorconfig

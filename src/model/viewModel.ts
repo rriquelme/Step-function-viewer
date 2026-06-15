@@ -4,10 +4,13 @@ import { type Graph, type GraphNode, buildGraph } from '../asl/graph';
 import { parseStateMachine } from '../asl/parser';
 import { effectiveQueryLanguage, machineQueryLanguage } from '../asl/queryLanguage';
 import { type Diagnostic, validateStateMachine } from '../asl/validate';
+import { type StateVariableSummary, type VariableInfo, analyzeVariables } from '../analysis/variables';
 import type { QueryLanguage } from '../asl/types';
 
 export interface ViewNode extends GraphNode {
   queryLanguage: QueryLanguage;
+  /** Variables this state creates and uses (for the click-a-state menu). */
+  variables: StateVariableSummary;
 }
 
 export interface ViewModel {
@@ -18,12 +21,17 @@ export interface ViewModel {
   nodes: ViewNode[];
   edges: Graph['edges'];
   diagnostics: Diagnostic[];
+  /** Per-variable definition/reference index for cross-state highlighting. */
+  variables: VariableInfo[];
 }
+
+const EMPTY_SUMMARY: StateVariableSummary = { created: [], used: [] };
 
 export function buildViewModel(text: string): ViewModel {
   const { machine, tree, errors } = parseStateMachine(text);
   const graph = buildGraph(machine, tree);
   const diagnostics = validateStateMachine(machine, graph, tree);
+  const analysis = analyzeVariables(machine, graph);
 
   for (const err of errors) {
     diagnostics.unshift({
@@ -39,6 +47,7 @@ export function buildViewModel(text: string): ViewModel {
       machine,
       machine?.States?.[node.jsonPath[node.jsonPath.length - 1] as string],
     ),
+    variables: analysis.perState[node.id] ?? EMPTY_SUMMARY,
   }));
 
   return {
@@ -48,5 +57,6 @@ export function buildViewModel(text: string): ViewModel {
     nodes,
     edges: graph.edges,
     diagnostics,
+    variables: analysis.variables,
   };
 }

@@ -23,12 +23,18 @@
 
 ---
 
-> **Progress (2026-06-15):** Phases 0–2 implemented. Scaffolding, the custom
-> editor with document↔webview sync and click-to-source, and the full ASL
-> parse → graph → validate pipeline are in place and green (typecheck, lint,
-> 7 unit tests, two-bundle build). Remaining within these phases: the
-> integration-test harness (0.4), wiring diagnostics into the VS Code Problems
-> panel (2.4), and the `autoOpen` setting behavior (1.4).
+> **Progress (2026-06-15):** Phases 0–3 implemented, plus an interim list-based
+> version of the Phase 5 differentiator. Highlights: scaffolding + CI; custom
+> editor with document↔webview sync, click-to-source, `autoOpen`, and
+> Problems-panel diagnostics; the ASL parse → graph → validate pipeline; the
+> JSONata variable analysis (definitions, references, per-state summaries,
+> cross-state index); and a webview that already lets you click a state to see
+> its variables and click a variable to highlight every state that defines or
+> references it. Green: typecheck, lint, **17 unit tests**, two-bundle build.
+> The integration-test harness (0.4) is wired and runs in CI (it needs to
+> download VS Code, which the dev sandbox blocks). Still ahead: the real SVG
+> graph (Phase 4), precise per-expression source ranges (3.1), and the
+> graph-native versions of the variable inspector + data-flow edges (Phase 5).
 
 ## Phase 0 — Project Scaffolding & Tooling
 
@@ -44,7 +50,7 @@
 - [x] **0.3 Linting, formatting, and editor config**
   - ESLint + `@typescript-eslint`, Prettier, `.editorconfig`.
   - Add `npm run lint` and a pre-commit check.
-- [ ] **0.4 Testing harness**
+- [x] **0.4 Testing harness**
   - `@vscode/test-electron` (or `@vscode/test-cli`) for integration tests,
     plus a unit-test runner (Vitest/Jest) for pure logic (parser/analyzer).
 - [x] **0.5 Repo hygiene**
@@ -74,7 +80,7 @@
   - Command palette + editor title button: "Open Step Function Viewer",
     "Reveal variable usages", "Export diagram (SVG/PNG)".
   - `contributes.menus` to surface the viewer button only for ASL files.
-- [ ] **1.4 Settings (`contributes.configuration`)**
+- [x] **1.4 Settings (`contributes.configuration`)**
   - Toggle JSONPath support (future), layout direction (TB/LR), theme sync,
     auto-open viewer on ASL file open.
 
@@ -96,7 +102,7 @@
     name, range) and edges (with kind: `next` | `choice` | `default` |
     `catch` | `branch-start`). Handle nested scopes (Parallel branches, Map
     item processors) as subgraphs/containers.
-- [ ] **2.4 Validation & diagnostics**
+- [x] **2.4 Validation & diagnostics**
   - Detect: missing `StartAt`, dangling `Next` targets, unreachable states,
     states with neither `Next` nor `End`. Surface as VS Code diagnostics.
 - [x] **2.5 Query-language detection**
@@ -111,25 +117,25 @@
   - Scan ASL fields that accept JSONata (`{% %}`): `Assign`, `Arguments`,
     `Output`, `Items` (Map), `Condition` (Choice), `Variable` fields, etc.
   - Keep precise source ranges for each expression for later highlighting.
-- [ ] **3.2 Extract variable *definitions***
+- [x] **3.2 Extract variable *definitions***
   - From each state's `Assign` block, record the variable names created (the
     object keys), associated with the defining state and source range.
-- [ ] **3.3 Extract variable *references***
+- [x] **3.3 Extract variable *references***
   - Parse JSONata expressions (use the `jsonata` package's AST, or a focused
     tokenizer) to find `$name` references. Distinguish:
     - user variables (`$myVar`),
     - reserved context (`$states.*`, `$$` legacy context),
     - JSONata built-ins (`$map`, `$filter`, `$sum`, ...) which must be
       excluded from the variable list.
-- [ ] **3.4 Build the variable index**
+- [x] **3.4 Build the variable index**
   - Produce a map: `variableName -> { definitions: Location[], references:
     Location[] }`, where `Location = { stateName, field, range }`.
   - Track scope/shadowing where a variable is reassigned in multiple states.
-- [ ] **3.5 Per-state variable summary**
+- [x] **3.5 Per-state variable summary**
   - For each state compute: variables **created** (Assign), variables **used**
     (referenced in its expressions), and **passed through**. This feeds the
     click-a-state menu.
-- [ ] **3.6 Unit tests for the analyzer**
+- [x] **3.6 Unit tests for the analyzer**
   - Golden-file tests over sample ASL documents covering Assign, nested Map/
     Parallel scopes, Choice conditions, and built-in exclusion.
 
@@ -161,20 +167,20 @@
 
 ## Phase 5 — Variable Inspector Panel (Differentiator UI)
 
-- [ ] **5.1 Per-state variable menu**
+- [x] **5.1 Per-state variable menu**
   - On clicking a state, open a panel/popover listing variables **created** and
     **used** by that state, grouped and labeled, each with its source field.
-- [ ] **5.2 Variable selection -> cross-state highlight**
+- [x] **5.2 Variable selection -> cross-state highlight**
   - Clicking a variable highlights, in the graph, every state that **defines**
     it (e.g. green outline) and every state that **references** it (e.g. blue
     outline), with a legend. Dim unrelated states to focus the data flow.
-- [ ] **5.3 Variable detail view**
+- [x] **5.3 Variable detail view**
   - Show the variable's full def/use list with jump-to-source links; allow
     cycling through usages (next/previous).
 - [ ] **5.4 Data-flow edges (optional/advanced)**
   - Optionally draw "data edges" from defining state(s) to referencing states
     to visualize variable propagation alongside control flow.
-- [ ] **5.5 Global variable index view**
+- [x] **5.5 Global variable index view**
   - A tree/list of all variables in the machine; selecting one triggers the
     same highlight behavior without first selecting a state.
 - [ ] **5.6 Accessibility & UX**
