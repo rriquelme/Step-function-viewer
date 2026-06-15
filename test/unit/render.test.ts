@@ -95,6 +95,24 @@ describe('render', () => {
     expect(nodeEls.get('P')!.classList.contains('dimmed')).toBe(false);
   });
 
+  it('shows the integration on a Task type label', () => {
+    const taskNodes = [
+      {
+        id: 'Invoke',
+        name: 'Invoke',
+        type: 'Task',
+        container: false,
+        resource: 'arn:aws:states:::lambda:invoke',
+      },
+    ];
+    const laid = layoutGraph(taskNodes, [], 'TB');
+    const { viewport } = createCanvas();
+    const els = renderInto(viewport, laid, { onSelectNode: () => {}, onRevealNode: () => {} });
+    expect(els.get('Invoke')!.querySelector('text.node-type')?.textContent).toBe(
+      'TASK · lambda:invoke',
+    );
+  });
+
   it('makes nodes focusable with a title and aria-label (a11y)', () => {
     const { nodeEls } = renderGraph();
     const a = nodeEls.get('A')!;

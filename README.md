@@ -24,6 +24,8 @@ referenced — a data-flow lens over your state machine.
   nested layout: each draws a labelled **scope box** around exactly its own
   states (purple for Parallel, teal for Map). Terminal **Succeed**/**Fail**
   states render as small end balls (green ✓ / red ✕).
+- Task nodes show their integration inline (e.g. `TASK · lambda:invoke`); the
+  full resource ARN is in the hover tooltip.
 - Detects the effective **QueryLanguage** (JSONata vs JSONPath).
 - Structural diagnostics in the Problems panel: missing `StartAt`, dangling
   transitions, unreachable states, states with neither `Next` nor `End`.

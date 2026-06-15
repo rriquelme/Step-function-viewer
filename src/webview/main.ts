@@ -69,6 +69,8 @@ function toLayoutInputs(m: ViewModel): { nodes: LayoutInputNode[]; edges: Layout
       type: n.type,
       container: n.container,
       parentId: n.parentId,
+      resource: n.resource,
+      functionName: n.functionName,
     })),
     edges: m.edges.map((e) => ({ from: e.from, to: e.to, kind: e.kind, label: e.label })),
   };

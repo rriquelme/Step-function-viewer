@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.6]
+
+### Changed
+
+- **Task nodes show their integration** in the type label, e.g.
+  `TASK · lambda:invoke` (or `TASK · dynamodb:putItem`), condensed from the
+  state's `Resource`. The full ARN is in the node's hover tooltip. Node width
+  grows to fit the label.
+
 ## [0.0.5]
 
 ### Added

@@ -1,6 +1,7 @@
 // SVG rendering of a laid-out graph. Layout (expensive, dagre) is kept separate
 // from rendering (cheap) so selection/highlight changes never trigger re-layout.
 import type { LaidOutEdge, LaidOutGraph, LaidOutNode } from './layout';
+import { typeLabel } from './label';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -151,7 +152,9 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   }) as SVGGElement;
 
   const title = svgEl('title');
-  title.textContent = `${node.type}: ${node.name}`;
+  title.textContent = node.resource
+    ? `${node.type}: ${node.name}\n${node.resource}`
+    : `${node.type}: ${node.name}`;
   g.append(title);
 
   if (node.container) {
@@ -183,7 +186,7 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
       svgEl('rect', { class: 'node-box', width: String(node.width), height: String(node.height), rx: '8', ry: '8' }),
     );
     const type = svgEl('text', { class: 'node-type', x: String(node.width / 2), y: '18', 'text-anchor': 'middle' });
-    type.textContent = node.type.toUpperCase();
+    type.textContent = truncate(typeLabel(node.type, node.resource, node.functionName), 40);
     g.append(type);
     const name = svgEl('text', { class: 'node-name', x: String(node.width / 2), y: '37', 'text-anchor': 'middle' });
     name.textContent = truncate(node.name, 32);

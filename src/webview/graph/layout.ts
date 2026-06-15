@@ -3,6 +3,7 @@
 // nodes, routed edges, and overall bounds.
 import * as dagre from '@dagrejs/dagre';
 import type { EdgeKind } from '../../asl/graph';
+import { typeLabel } from './label';
 
 export type Rankdir = 'TB' | 'LR';
 
@@ -12,6 +13,8 @@ export interface LayoutInputNode {
   type: string;
   container: boolean;
   parentId?: string;
+  resource?: string;
+  functionName?: string;
 }
 
 export interface LayoutInputEdge {
@@ -73,7 +76,13 @@ function leafSize(node: LayoutInputNode): { width: number; height: number } {
   if (isTerminal(node.type)) {
     return { width: Math.max(TERMINAL_W, node.name.length * CHAR_WIDTH), height: TERMINAL_H };
   }
-  return { width: nodeWidth(node.name), height: NODE_HEIGHT };
+  // Size to the wider of the name (13px) and the type/resource subtitle (~9px).
+  const subtitle = typeLabel(node.type, node.resource, node.functionName);
+  const base = Math.max(node.name.length * CHAR_WIDTH, subtitle.length * 6.2);
+  return {
+    width: Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(base) + 36)),
+    height: NODE_HEIGHT,
+  };
 }
 
 interface SubLayout {
