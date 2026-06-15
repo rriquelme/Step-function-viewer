@@ -15,4 +15,5 @@ export type ExtensionToWebview =
 export type WebviewToExtension =
   | { type: 'ready' }
   | { type: 'selectState'; nodeId: string }
-  | { type: 'selectVariable'; variable: string };
+  | { type: 'selectVariable'; variable: string }
+  | { type: 'revealRange'; start: number; end: number };

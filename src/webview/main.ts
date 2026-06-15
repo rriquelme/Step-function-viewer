@@ -12,12 +12,7 @@ import {
   type LayoutInputNode,
   layoutGraph,
 } from './graph/layout';
-import {
-  type HighlightState,
-  applyHighlight,
-  createCanvas,
-  renderInto,
-} from './graph/render';
+import { applyHighlight, createCanvas, renderInto, updateDataFlow } from './graph/render';
 import { Viewport } from './graph/viewport';
 import { structureHash } from './graph/structure';
 
@@ -92,8 +87,11 @@ function selectNode(id: string): void {
 
 /** Re-apply highlight classes and rebuild the cheap DOM (toolbar + sidebar). */
 function refreshHighlight(): void {
-  const state: HighlightState = { selectedNodeId, selectedVariable, ...highlightSets() };
-  applyHighlight(nodeEls, state);
+  const sets = highlightSets();
+  applyHighlight(nodeEls, { selectedNodeId, selectedVariable, ...sets });
+  if (viewportGroup && lastLayout) {
+    updateDataFlow(viewportGroup, lastLayout, sets.defs, sets.refs);
+  }
   rebuildToolbar();
   rebuildSidebar();
 }
@@ -160,7 +158,9 @@ function mountGraph(container: HTMLElement): void {
     onSelectNode: selectNode,
     onRevealNode: (id) => post({ type: 'selectState', nodeId: id }),
   });
-  applyHighlight(nodeEls, { selectedNodeId, selectedVariable, ...highlightSets() });
+  const sets = highlightSets();
+  applyHighlight(nodeEls, { selectedNodeId, selectedVariable, ...sets });
+  updateDataFlow(viewportGroup, lastLayout, sets.defs, sets.refs);
   viewport.fit({ width: lastLayout.width, height: lastLayout.height });
 }
 
@@ -223,6 +223,25 @@ function rebuildSidebar(): void {
   if (selectedVariable) {
     sidebarEl.append(renderVariableDetail(model.variables.find((v) => v.name === selectedVariable)));
   }
+
+  sidebarEl.append(renderLegend());
+}
+
+function renderLegend(): HTMLElement {
+  const legend = el('div', 'legend');
+  legend.append(heading('Legend'));
+  const items: [string, string][] = [
+    ['swatch def', 'Defines the selected variable'],
+    ['swatch ref', 'References the selected variable'],
+    ['swatch data', 'Data flow (definition → reference)'],
+  ];
+  for (const [cls, label] of items) {
+    const row = el('div', 'legend-row');
+    row.append(el('span', cls));
+    row.append(span(label, 'legend-label'));
+    legend.append(row);
+  }
+  return legend;
 }
 
 function renderSelectedState(node: ViewNode): HTMLElement {
@@ -264,12 +283,21 @@ function renderVariableList(m: ViewModel): HTMLElement {
   const list = el('ul', 'var-list');
   for (const info of m.variables) {
     const item = el('li', 'var-item') as HTMLLIElement;
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
     if (info.name === selectedVariable) {
       item.classList.add('active');
+      item.setAttribute('aria-pressed', 'true');
     }
     item.append(span(`$${info.name}`, 'var-name'));
     item.append(span(`${info.definitions.length} def · ${info.references.length} use`, 'var-meta'));
     item.addEventListener('click', () => selectVariable(info.name));
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectVariable(info.name);
+      }
+    });
     list.append(item);
   }
   return list;
@@ -300,9 +328,21 @@ function renderUsageList(
   const list = el('ul', 'usage-list');
   for (const u of usages) {
     const item = el('li', 'usage-item') as HTMLLIElement;
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
     item.append(span(u.stateName, 'usage-state'));
     item.append(span(u.field, 'usage-field'));
-    item.addEventListener('click', () => post({ type: 'selectState', nodeId: u.nodeId }));
+    const reveal = () =>
+      u.range
+        ? post({ type: 'revealRange', start: u.range.start, end: u.range.end })
+        : post({ type: 'selectState', nodeId: u.nodeId });
+    item.addEventListener('click', reveal);
+    item.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        reveal();
+      }
+    });
     list.append(item);
   }
   wrap.append(list);
@@ -358,6 +398,7 @@ function button(text: string, className?: string): HTMLButtonElement {
 function iconButton(text: string, title: string, onClick: () => void): HTMLButtonElement {
   const node = button(text, 'icon-btn');
   node.title = title;
+  node.setAttribute('aria-label', title);
   node.addEventListener('click', onClick);
   return node;
 }

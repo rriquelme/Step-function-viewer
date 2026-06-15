@@ -192,6 +192,24 @@ body {
 .arrow-head {
   fill: context-stroke;
 }
+
+/* Data-flow overlay (definition -> reference for the selected variable). */
+.data-edge {
+  fill: none;
+  stroke: var(--vscode-charts-orange, #e8a33d);
+  stroke-width: 2px;
+  stroke-dasharray: 5 4;
+  opacity: 0.9;
+}
+
+/* Keyboard focus for graph nodes. */
+.node:focus {
+  outline: none;
+}
+.node:focus-visible .node-box {
+  stroke: var(--vscode-focusBorder);
+  stroke-width: 2.5px;
+}
 .edge-label {
   fill: var(--vscode-descriptionForeground, var(--vscode-foreground));
   font-size: 10px;
@@ -377,6 +395,48 @@ button:hover {
 .usage-field {
   font-size: 0.8em;
   opacity: 0.7;
+}
+.usage-item:focus-visible,
+.var-item:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.legend {
+  margin-top: 16px;
+  border-top: 1px solid var(--vscode-panel-border);
+  padding-top: 8px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.legend .swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+  border: 2px solid transparent;
+}
+.legend .swatch.def {
+  border-color: var(--vscode-charts-green, #4caf50);
+}
+.legend .swatch.ref {
+  border-color: var(--vscode-charts-blue, #3794ff);
+}
+.legend .swatch.data {
+  border: none;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--vscode-charts-orange, #e8a33d) 0 5px,
+    transparent 5px 9px
+  );
+}
+.legend-label {
+  font-size: 0.85em;
+  opacity: 0.85;
 }
 
 .diagnostics {

@@ -72,8 +72,11 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
           case 'selectState':
             void this.revealState(document, message.nodeId);
             break;
+          case 'revealRange':
+            void this.revealRange(document, message.start, message.end);
+            break;
           case 'selectVariable':
-            // Cross-state highlighting is implemented in Phase 5.
+            // Highlighting happens entirely in the webview.
             break;
         }
       },
@@ -106,11 +109,27 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
       document.positionAt(node.range.start),
       document.positionAt(node.range.end),
     );
+    await this.reveal(document, range);
+  }
+
+  /** Reveal an exact character-offset range (used for a specific variable usage). */
+  private async revealRange(
+    document: vscode.TextDocument,
+    start: number,
+    end: number,
+  ): Promise<void> {
+    await this.reveal(
+      document,
+      new vscode.Range(document.positionAt(start), document.positionAt(end)),
+    );
+  }
+
+  private async reveal(document: vscode.TextDocument, range: vscode.Range): Promise<void> {
     const editor = await vscode.window.showTextDocument(document, {
       viewColumn: vscode.ViewColumn.Beside,
       preserveFocus: false,
     });
-    editor.selection = new vscode.Selection(range.start, range.start);
+    editor.selection = new vscode.Selection(range.start, range.end);
     editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
   }
 

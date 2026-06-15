@@ -8,7 +8,7 @@ import { analyzeVariables } from '../../src/analysis/variables';
 function analyze(doc: object) {
   const { machine, tree } = parseStateMachine(JSON.stringify(doc));
   const graph = buildGraph(machine, tree);
-  return analyzeVariables(machine, graph);
+  return analyzeVariables(machine, graph, tree);
 }
 
 describe('analyzeVariables', () => {
@@ -39,6 +39,11 @@ describe('analyzeVariables', () => {
 
     expect(analysis.perState['Define'].created).toEqual(['orderId']);
     expect(analysis.perState['Use'].used).toEqual(['orderId']);
+
+    // Source ranges are captured for jump-to-source.
+    expect(orderId!.definitions[0].range).toBeDefined();
+    expect(orderId!.references[0].range).toBeDefined();
+    expect(orderId!.references[0].range!.end).toBeGreaterThan(orderId!.references[0].range!.start);
   });
 
   it('tracks variables across Parallel branches and Map item processors', () => {

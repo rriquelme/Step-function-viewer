@@ -31,11 +31,14 @@
 > diagnostics, click-to-source, and settings. A sample library, docs
 > (`README`, `CONTRIBUTING`, `docs/architecture.md`, `CHANGELOG`), a generated
 > icon, integration tests, and CI/release workflows are in place; `vsce package`
-> produces a ~108 KB `.vsix`. Green: typecheck, lint, **27 unit tests**
-> (incl. jsdom render tests), build, packaging. **Pending:** real Marketplace
-> credentials to publish (7.3), README screenshots/GIFs (can't capture in the
-> sandbox), precise per-expression source ranges (3.1), and the optional
-> graph-native data-flow edges (5.4). Note: the integration tests and the
+> produces a ~108 KB `.vsix`. Polish landed too: precise per-expression source
+> ranges with jump-to-exact-usage (3.1), graph **data-flow edges** overlaid for
+> the selected variable (5.4), and accessibility — focusable nodes with
+> keyboard activation, tooltips, aria labels, and a legend (5.6). Green:
+> typecheck, lint, **29 unit tests** (incl. jsdom render tests), build,
+> packaging. **Pending:** real Marketplace credentials to publish (7.3),
+> README screenshots/GIFs, and the optional editor-title commands (1.3,
+> "reveal usages" / "export diagram"). Note: the integration tests and the
 > running graph couldn't be exercised in this network-restricted sandbox (no
 > VS Code download / display); they run in CI and locally.
 
@@ -116,7 +119,7 @@
 
 ## Phase 3 — JSONata Variable Analysis (Core Differentiator)
 
-- [ ] **3.1 Locate all JSONata expressions**
+- [x] **3.1 Locate all JSONata expressions**
   - Scan ASL fields that accept JSONata (`{% %}`): `Assign`, `Arguments`,
     `Output`, `Items` (Map), `Condition` (Choice), `Variable` fields, etc.
   - Keep precise source ranges for each expression for later highlighting.
@@ -211,13 +214,13 @@
 - [x] **5.3 Variable detail view**
   - Show the variable's full def/use list with jump-to-source links; allow
     cycling through usages (next/previous).
-- [ ] **5.4 Data-flow edges (optional/advanced)**
+- [x] **5.4 Data-flow edges (optional/advanced)**
   - Optionally draw "data edges" from defining state(s) to referencing states
     to visualize variable propagation alongside control flow.
 - [x] **5.5 Global variable index view**
   - A tree/list of all variables in the machine; selecting one triggers the
     same highlight behavior without first selecting a state.
-- [ ] **5.6 Accessibility & UX**
+- [x] **5.6 Accessibility & UX**
   - Keyboard navigation, focus states, tooltips, and clear empty/error states.
 
 ---

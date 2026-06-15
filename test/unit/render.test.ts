@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { layoutGraph } from '../../src/webview/graph/layout';
-import { applyHighlight, createCanvas, renderInto } from '../../src/webview/graph/render';
+import {
+  applyHighlight,
+  createCanvas,
+  renderInto,
+  updateDataFlow,
+} from '../../src/webview/graph/render';
 
 const nodes = [
   { id: 'A', name: 'A', type: 'Pass', container: false },
@@ -20,7 +25,7 @@ function renderGraph() {
     onSelectNode: () => {},
     onRevealNode: () => {},
   });
-  return { svg, nodeEls };
+  return { svg, viewport, laid, nodeEls };
 }
 
 describe('render', () => {
@@ -61,5 +66,24 @@ describe('render', () => {
     });
     expect(nodeEls.get('A')!.classList.contains('def')).toBe(false);
     expect(nodeEls.get('P')!.classList.contains('dimmed')).toBe(false);
+  });
+
+  it('makes nodes focusable with a title and aria-label (a11y)', () => {
+    const { nodeEls } = renderGraph();
+    const a = nodeEls.get('A')!;
+    expect(a.getAttribute('tabindex')).toBe('0');
+    expect(a.getAttribute('role')).toBe('button');
+    expect(a.getAttribute('aria-label')).toContain('A');
+    expect(a.querySelector('title')?.textContent).toContain('A');
+  });
+
+  it('updateDataFlow draws one edge per definition/reference pair and clears', () => {
+    const { viewport, laid } = renderGraph();
+    updateDataFlow(viewport, laid, new Set(['A']), new Set(['B', 'P']));
+    expect(viewport.querySelectorAll('path.data-edge').length).toBe(2);
+
+    // A node that is both a def and a ref does not link to itself.
+    updateDataFlow(viewport, laid, new Set(['A']), new Set(['A']));
+    expect(viewport.querySelectorAll('path.data-edge').length).toBe(0);
   });
 });

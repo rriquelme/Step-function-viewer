@@ -31,7 +31,7 @@ export function buildViewModel(text: string): ViewModel {
   const { machine, tree, errors } = parseStateMachine(text);
   const graph = buildGraph(machine, tree);
   const diagnostics = validateStateMachine(machine, graph, tree);
-  const analysis = analyzeVariables(machine, graph);
+  const analysis = analyzeVariables(machine, graph, tree);
 
   for (const err of errors) {
     diagnostics.unshift({

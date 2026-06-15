@@ -22,6 +22,7 @@ export function createCanvas(): { svg: SVGSVGElement; viewport: SVGGElement } {
 
   const defs = svgEl('defs');
   defs.append(arrowMarker('arrow'));
+  defs.append(arrowMarker('data-arrow'));
   svg.append(defs);
 
   const viewport = svgEl('g', { class: 'viewport' }) as SVGGElement;
@@ -53,7 +54,60 @@ export function renderInto(
   }
   viewport.append(nodeLayer);
 
+  // Empty overlay for data-flow edges (drawn on demand by updateDataFlow).
+  viewport.append(svgEl('g', { class: 'data-flow-layer' }));
+
   return nodeEls;
+}
+
+/**
+ * Draw "data-flow" edges from each defining state to each referencing state for
+ * the selected variable, overlaid on the control-flow graph. Pass empty sets to
+ * clear the overlay.
+ */
+export function updateDataFlow(
+  viewport: SVGGElement,
+  laid: LaidOutGraph,
+  defs: Set<string>,
+  refs: Set<string>,
+): void {
+  const layer = viewport.querySelector('g.data-flow-layer');
+  if (!layer) {
+    return;
+  }
+  layer.replaceChildren();
+  if (defs.size === 0 || refs.size === 0) {
+    return;
+  }
+  const centers = new Map(laid.nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
+  for (const from of defs) {
+    for (const to of refs) {
+      if (from === to) {
+        continue;
+      }
+      const a = centers.get(from);
+      const b = centers.get(to);
+      if (!a || !b) {
+        continue;
+      }
+      // Quadratic curve bowed perpendicular to the line for legibility.
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const bow = Math.min(60, len * 0.2);
+      const cx = mx - (dy / len) * bow;
+      const cy = my + (dx / len) * bow;
+      layer.append(
+        svgEl('path', {
+          class: 'data-edge',
+          d: `M ${a.x.toFixed(1)} ${a.y.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`,
+          'marker-end': 'url(#data-arrow)',
+        }),
+      );
+    }
+  }
 }
 
 /** Toggle highlight/selection classes on existing node elements (no re-render). */
@@ -77,7 +131,14 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
     class: `node type-${node.type}${node.container ? ' container' : ''}`,
     'data-id': node.id,
     transform: `translate(${x}, ${y})`,
+    tabindex: '0',
+    role: 'button',
+    'aria-label': `${node.type} state ${node.name}`,
   }) as SVGGElement;
+
+  const title = svgEl('title');
+  title.textContent = `${node.type}: ${node.name}`;
+  g.append(title);
 
   const rect = svgEl('rect', {
     class: 'node-box',
@@ -113,6 +174,12 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   g.addEventListener('dblclick', (e) => {
     e.stopPropagation();
     handlers.onRevealNode(node.id);
+  });
+  g.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handlers.onSelectNode(node.id);
+    }
   });
   return g;
 }
