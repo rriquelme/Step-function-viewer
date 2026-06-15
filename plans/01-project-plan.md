@@ -23,18 +23,20 @@
 
 ---
 
-> **Progress (2026-06-15):** Phases 0–3 implemented, plus an interim list-based
-> version of the Phase 5 differentiator. Highlights: scaffolding + CI; custom
-> editor with document↔webview sync, click-to-source, `autoOpen`, and
-> Problems-panel diagnostics; the ASL parse → graph → validate pipeline; the
-> JSONata variable analysis (definitions, references, per-state summaries,
-> cross-state index); and a webview that already lets you click a state to see
-> its variables and click a variable to highlight every state that defines or
-> references it. Green: typecheck, lint, **17 unit tests**, two-bundle build.
-> The integration-test harness (0.4) is wired and runs in CI (it needs to
-> download VS Code, which the dev sandbox blocks). Still ahead: the real SVG
-> graph (Phase 4), precise per-expression source ranges (3.1), and the
-> graph-native versions of the variable inspector + data-flow edges (Phase 5).
+> **Progress (2026-06-15):** Phases 0–4 implemented (4.5 shipped as a flat
+> layout — see note there), plus the Phase 5 differentiator on the graph.
+> Highlights: scaffolding + CI; custom editor with document↔webview sync,
+> click-to-source, `autoOpen`, and Problems-panel diagnostics; the ASL parse →
+> graph → validate pipeline; JSONata variable analysis (definitions, references,
+> per-state summaries, cross-state index); and an **interactive SVG graph**
+> (dagre layout, pan/zoom/fit, per-type nodes, per-kind edges with arrowheads
+> and labels) where clicking a state shows its variables and clicking a variable
+> highlights every defining (green) / referencing (blue) state and dims the
+> rest. Green: typecheck, lint, **27 unit tests** (incl. jsdom render smoke
+> tests), two-bundle build. The integration-test harness (0.4) runs in CI (it
+> downloads VS Code, which the dev sandbox blocks). Still ahead: precise
+> per-expression source ranges (3.1), graph-native data-flow edges (5.4), and
+> Phases 6–7 (samples/docs, packaging/release).
 
 ## Phase 0 — Project Scaffolding & Tooling
 
@@ -143,25 +145,56 @@
 
 ## Phase 4 — Graph Rendering (Webview)
 
-- [ ] **4.1 Choose rendering stack**
-  - Webview UI: lightweight framework (Preact/React or vanilla TS) + a layout
-    engine. Recommend **elkjs** or **dagre** for automatic layered layout;
-    render nodes/edges as SVG (crisp, themeable, exportable).
-- [ ] **4.2 Render states and transitions**
-  - Node shapes/icons per state type, labeled edges for Choice/Catch, nested
-    containers for Parallel branches and Map item processors.
-  - Pan, zoom, fit-to-screen, minimap (optional).
-- [ ] **4.3 Theme integration**
-  - Use VS Code CSS variables so the diagram matches light/dark/high-contrast.
-- [ ] **4.4 Extension <-> webview messaging protocol**
-  - Define typed messages: `loadModel`, `selectState`, `selectVariable`,
-    `highlight`, `revealInEditor`, `error`. Centralize in a shared module.
-- [ ] **4.5 Click-to-source**
-  - Selecting a node reveals and selects the corresponding range in the text
-    document (using stored ranges from Phase 2.2).
-- [ ] **4.6 Performance**
-  - Virtualize/limit redraws for large machines; incremental update on edits
-    instead of full re-layout where possible.
+> Approach: build the graph in thin, independently working slices. Each step
+> leaves the webview in a runnable state, so we can verify and commit as we go.
+> Stack decision: **vanilla TS + SVG** (matches the existing webview, no
+> framework) with **`@dagrejs/dagre`** for layered layout (pure JS, synchronous,
+> bundles cleanly via esbuild — simpler than elkjs's worker/wasm setup).
+
+- [x] **4.1 Add the layout dependency & layout module**
+  - Add `@dagrejs/dagre` (bundled into the webview by esbuild).
+  - `webview/graph/layout.ts`: pure function `layout(nodes, edges, rankdir)` →
+    positioned nodes (`{id,x,y,width,height}`), edges (`{points,label,kind}`),
+    and graph bounds. No DOM here, so it stays unit-testable.
+  - Node sizing from the label; honor `rankdir` (`TB`/`LR`).
+- [x] **4.2 Render a static SVG graph**
+  - `webview/graph/render.ts`: draw nodes as `<g>` (rect + type + name) and
+    edges as `<path>` with an arrowhead `<marker>`.
+  - Replace the state-list column with the SVG canvas; keep the toolbar,
+    sidebar, and diagnostics.
+- [x] **4.3 Edge labels & per-kind styling**
+  - Render Choice/Default/Catch labels at edge midpoints; style edge kinds
+    (`next`, `choice`, `default`, `catch`, `branch`, `map`) via CSS classes.
+  - Node styling per state type (color/accent), with a small legend.
+- [x] **4.4 Pan, zoom & fit-to-screen**
+  - `webview/graph/viewport.ts`: a transform controller (`translate`+`scale`)
+    wrapping the root `<g>`. Wheel-zoom around the cursor, drag-to-pan,
+    toolbar buttons for zoom in/out, reset, and fit-to-bounds.
+- [~] **4.5 Container grouping (Parallel branches / Map item processors)**
+  - Attempted dagre compound nodes (`setParent`). **Decision:** this dagre
+    version throws whenever an edge attaches to a cluster-parent node, which our
+    container states always do (incoming `Next`, outgoing `branch`/`map`). True
+    clustering was abandoned as too fragile.
+  - **Shipped instead:** a flat layout where containers are distinct nodes
+    (dashed border + `▦` marker) and the `branch`/`map` entry edges keep the
+    container→child nesting legible. Revisit with elkjs (native cluster support)
+    if visual nesting becomes important — tracked as a stretch goal.
+- [x] **4.6 Wire selection, highlighting & click-to-source into the graph**
+  - Single-click a node → select it (sidebar shows its created/used variables);
+    selecting a variable highlights defining (green) and referencing (blue)
+    nodes and dims the rest — the differentiator, now on the graph.
+  - A "reveal in source" affordance posts `selectState` (Phase 2.2 ranges).
+  - Centralize the typed message protocol; pass `layoutDirection` from settings
+    to the webview via the `loadModel` message options.
+- [x] **4.7 Theme integration**
+  - Use VS Code CSS variables throughout so the diagram matches
+    light/dark/high-contrast themes.
+- [x] **4.8 Performance & robustness**
+  - Skip re-layout when the structure is unchanged (hash nodes/edges); guard
+    against empty/invalid models; cap label sizes. (Minimap is a stretch goal.)
+- [x] **4.9 Tests**
+  - Unit-test `layout.ts` (deterministic positions/bounds, rankdir) and a
+    structural hash helper used to skip re-layout.
 
 ---
 

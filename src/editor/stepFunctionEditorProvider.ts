@@ -41,7 +41,11 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
     const updateWebview = () => {
       try {
         const model = buildViewModel(document.getText());
-        post({ type: 'loadModel', model });
+        const layoutDirection =
+          vscode.workspace
+            .getConfiguration('stepFunctionViewer')
+            .get<'TB' | 'LR'>('layoutDirection') ?? 'TB';
+        post({ type: 'loadModel', model, options: { layoutDirection } });
       } catch (err) {
         post({ type: 'error', message: `Failed to parse state machine: ${String(err)}` });
       }
@@ -75,12 +79,19 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
       },
     );
 
+    const configSub = vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('stepFunctionViewer.layoutDirection')) {
+        updateWebview();
+      }
+    });
+
     webviewPanel.onDidDispose(() => {
       if (debounce) {
         clearTimeout(debounce);
       }
       changeSub.dispose();
       messageSub.dispose();
+      configSub.dispose();
     });
   }
 

@@ -2,6 +2,11 @@
   color-scheme: light dark;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -9,6 +14,12 @@ body {
   font-size: var(--vscode-font-size);
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 .toolbar {
@@ -33,6 +44,10 @@ body {
 
 .content {
   padding: 12px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .placeholder {
@@ -44,20 +59,161 @@ body {
 .layout {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.states-column {
-  flex: 1 1 60%;
+.graph-container {
+  flex: 1 1 auto;
   min-width: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.graph-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+}
+.graph-svg.panning {
+  cursor: grabbing;
 }
 
 .sidebar {
   flex: 0 0 280px;
+  overflow-y: auto;
   border-left: 1px solid var(--vscode-panel-border);
   padding-left: 16px;
-  position: sticky;
-  top: 56px;
+}
+
+.view-controls {
+  display: inline-flex;
+  gap: 4px;
+}
+.icon-btn {
+  min-width: 28px;
+  text-align: center;
+}
+
+/* --- graph nodes --- */
+.node {
+  cursor: pointer;
+}
+.node-box {
+  fill: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  stroke: var(--vscode-panel-border);
+  stroke-width: 1.5px;
+}
+.node:hover .node-box {
+  stroke: var(--vscode-focusBorder);
+}
+.node-type {
+  fill: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+.node-name {
+  fill: var(--vscode-foreground);
+  font-size: 13px;
+  font-weight: 600;
+}
+.node.container .node-box {
+  stroke-dasharray: 5 3;
+  fill: var(--vscode-editor-background);
+  fill-opacity: 0.4;
+}
+.node-header {
+  fill: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+/* Accent per state type via the left edge of the box. */
+.node.type-Task .node-box {
+  stroke: var(--vscode-charts-blue, #3794ff);
+}
+.node.type-Choice .node-box {
+  stroke: var(--vscode-charts-yellow, #d7a000);
+}
+.node.type-Parallel .node-box,
+.node.type-Map .node-box {
+  stroke: var(--vscode-charts-purple, #b180d7);
+}
+.node.type-Succeed .node-box {
+  stroke: var(--vscode-charts-green, #4caf50);
+}
+.node.type-Fail .node-box {
+  stroke: var(--vscode-charts-red, #f14c4c);
+}
+
+/* Selection + variable highlight. */
+.node.selected .node-box {
+  stroke: var(--vscode-focusBorder);
+  stroke-width: 2.5px;
+}
+.node.def .node-box {
+  stroke: var(--vscode-charts-green, #4caf50);
+  stroke-width: 3px;
+}
+.node.ref .node-box {
+  stroke: var(--vscode-charts-blue, #3794ff);
+  stroke-width: 3px;
+}
+.node.dimmed {
+  opacity: 0.25;
+}
+
+/* --- edges --- */
+.edge {
+  fill: none;
+  stroke: var(--vscode-editorIndentGuide-activeBackground, var(--vscode-foreground));
+  stroke-width: 1.5px;
+  opacity: 0.85;
+}
+.edge.kind-choice {
+  stroke-dasharray: 6 3;
+}
+.edge.kind-default {
+  stroke-dasharray: 2 3;
+}
+.edge.kind-catch {
+  stroke: var(--vscode-charts-red, #f14c4c);
+  stroke-dasharray: 4 3;
+}
+.edge.kind-branch,
+.edge.kind-map {
+  stroke: var(--vscode-charts-purple, #b180d7);
+}
+.arrow-head {
+  fill: context-stroke;
+}
+.edge-label {
+  fill: var(--vscode-descriptionForeground, var(--vscode-foreground));
+  font-size: 10px;
+  paint-order: stroke;
+  stroke: var(--vscode-editor-background);
+  stroke-width: 3px;
+}
+
+.selected-panel {
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 12px;
+}
+.selected-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.selected-header .name {
+  font-weight: 600;
 }
 
 .state-list {

@@ -7,19 +7,23 @@ a variable will **highlight every other state** where it is assigned or
 referenced — a data-flow lens over your state machine.
 
 > Status: early development. See [`plans/01-project-plan.md`](plans/01-project-plan.md)
-> for the full roadmap. Phases 0–2 (scaffolding, custom editor, ASL parsing &
-> model) are implemented; graph rendering (Phase 4) and the variable inspector
-> (Phases 3 & 5) are next.
+> for the full roadmap. Phases 0–4 are implemented (interactive graph + variable
+> inspector); packaging/docs (Phases 6–7) are next.
 
 ## Features (current)
 
-- Custom editor for `*.asl.json` / `*.asl` files.
-- Parses the state machine and lists states, including nested **Parallel**
-  branches and **Map** item processors.
+- Custom editor for `*.asl.json` / `*.asl` files with an **interactive SVG
+  graph** (dagre layout, pan / zoom / fit, per-state-type nodes, labeled edges
+  for Choice / Default / Catch, and `branch` / `map` edges into nested states).
+- **Variable inspector (the differentiator):** click a state to see the
+  variables it *creates* and *uses*; click a variable to **highlight every
+  state** that defines it (green) or references it (blue) and dim the rest.
+- Parses nested **Parallel** branches and **Map** item processors.
 - Detects the effective **QueryLanguage** (JSONata vs JSONPath).
-- Structural diagnostics: missing `StartAt`, dangling transitions, unreachable
-  states, and states with neither `Next` nor `End`.
-- Click a state to reveal it in the source document.
+- Structural diagnostics in the Problems panel: missing `StartAt`, dangling
+  transitions, unreachable states, states with neither `Next` nor `End`.
+- Click-to-source: reveal any state's JSON in the document (node double-click or
+  the sidebar "source" button).
 
 ## Getting started (development)
 

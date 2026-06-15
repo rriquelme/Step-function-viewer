@@ -1,35 +1,80 @@
-// Webview entry point.
-//
-// Until the SVG graph lands (Phase 4) this renders an interactive list view that
-// already delivers the core differentiator (Phases 3 & 5):
-//   - click a state to see the variables it CREATES and USES,
-//   - click a variable to HIGHLIGHT every state that defines or references it.
+// Webview entry point: an interactive SVG graph of the state machine plus a
+// variable sidebar. Clicking a state selects it (sidebar shows the variables it
+// creates/uses); clicking a variable highlights every state that defines (green)
+// or references (blue) it — the extension's differentiator, on the graph.
 import './style.css';
-import type { ExtensionToWebview, WebviewToExtension } from '../shared/protocol';
+import type { ExtensionToWebview, ViewOptions, WebviewToExtension } from '../shared/protocol';
 import type { ViewModel, ViewNode } from '../model/viewModel';
 import type { VariableInfo } from '../analysis/variables';
+import {
+  type LaidOutGraph,
+  type LayoutInputEdge,
+  type LayoutInputNode,
+  layoutGraph,
+} from './graph/layout';
+import {
+  type HighlightState,
+  applyHighlight,
+  createCanvas,
+  renderInto,
+} from './graph/render';
+import { Viewport } from './graph/viewport';
+import { structureHash } from './graph/structure';
 
 interface VsCodeApi {
   postMessage(message: WebviewToExtension): void;
   getState(): unknown;
   setState(state: unknown): void;
 }
-
 declare function acquireVsCodeApi(): VsCodeApi;
 
 const vscode = acquireVsCodeApi();
 const root = document.getElementById('app')!;
 
+// --- view state ---
 let model: ViewModel | undefined;
+let options: ViewOptions = { layoutDirection: 'TB' };
 let selectedNodeId: string | undefined;
 let selectedVariable: string | undefined;
+
+// --- persistent graph objects (survive selection changes to preserve zoom) ---
+let svg: SVGSVGElement | undefined;
+let viewportGroup: SVGGElement | undefined;
+let viewport: Viewport | undefined;
+let nodeEls = new Map<string, SVGGElement>();
+let lastLayout: LaidOutGraph | undefined;
+let lastHash = '';
+
+// DOM regions rebuilt on selection (cheap).
+let toolbarEl: HTMLElement | undefined;
+let sidebarEl: HTMLElement | undefined;
 
 function post(message: WebviewToExtension): void {
   vscode.postMessage(message);
 }
 
-function depthOf(node: ViewNode): number {
-  return Math.max(0, node.id.split('/').length - 1);
+function toLayoutInputs(m: ViewModel): { nodes: LayoutInputNode[]; edges: LayoutInputEdge[] } {
+  return {
+    nodes: m.nodes.map((n) => ({
+      id: n.id,
+      name: n.name,
+      type: n.type,
+      container: n.container,
+      parentId: n.parentId,
+    })),
+    edges: m.edges.map((e) => ({ from: e.from, to: e.to, kind: e.kind, label: e.label })),
+  };
+}
+
+function highlightSets(): { defs: Set<string>; refs: Set<string> } {
+  const defs = new Set<string>();
+  const refs = new Set<string>();
+  if (selectedVariable && model) {
+    const info = model.variables.find((v) => v.name === selectedVariable);
+    info?.definitions.forEach((u) => defs.add(u.nodeId));
+    info?.references.forEach((u) => refs.add(u.nodeId));
+  }
+  return { defs, refs };
 }
 
 function selectVariable(name: string | undefined): void {
@@ -37,35 +82,30 @@ function selectVariable(name: string | undefined): void {
   if (selectedVariable) {
     post({ type: 'selectVariable', variable: selectedVariable });
   }
-  render();
+  refreshHighlight();
 }
 
-function selectState(nodeId: string): void {
-  selectedNodeId = selectedNodeId === nodeId ? undefined : nodeId;
-  render();
+function selectNode(id: string): void {
+  selectedNodeId = selectedNodeId === id ? undefined : id;
+  refreshHighlight();
 }
 
-function highlightFor(name: string | undefined): { defs: Set<string>; refs: Set<string> } {
-  const defs = new Set<string>();
-  const refs = new Set<string>();
-  if (!name || !model) {
-    return { defs, refs };
-  }
-  const info = model.variables.find((v) => v.name === name);
-  if (info) {
-    info.definitions.forEach((u) => defs.add(u.nodeId));
-    info.references.forEach((u) => refs.add(u.nodeId));
-  }
-  return { defs, refs };
+/** Re-apply highlight classes and rebuild the cheap DOM (toolbar + sidebar). */
+function refreshHighlight(): void {
+  const state: HighlightState = { selectedNodeId, selectedVariable, ...highlightSets() };
+  applyHighlight(nodeEls, state);
+  rebuildToolbar();
+  rebuildSidebar();
 }
 
 function render(): void {
-  root.innerHTML = '';
   if (!model) {
     return;
   }
+  root.replaceChildren();
 
-  root.append(renderToolbar(model));
+  toolbarEl = el('div', 'toolbar');
+  root.append(toolbarEl);
 
   const content = el('div', 'content');
   if (!model.ok) {
@@ -73,101 +113,133 @@ function render(): void {
       para('This document is not a valid Amazon States Language state machine.', 'placeholder'),
     );
     root.append(content);
+    teardownGraph();
+    rebuildToolbar();
     return;
   }
 
   const layout = el('div', 'layout');
-  layout.append(renderStateColumn(model));
-  layout.append(renderSidebar(model));
+  const graphContainer = el('div', 'graph-container');
+  layout.append(graphContainer);
+  sidebarEl = el('div', 'sidebar');
+  layout.append(sidebarEl);
   content.append(layout);
 
   if (model.diagnostics.length > 0) {
-    const diags = el('div', 'diagnostics');
-    diags.append(heading('Diagnostics'));
-    for (const d of model.diagnostics) {
-      diags.append(para(`${d.severity.toUpperCase()}: ${d.message}`, `diag ${d.severity}`));
-    }
-    content.append(diags);
+    content.append(renderDiagnostics(model));
   }
-
   root.append(content);
+
+  mountGraph(graphContainer);
+  rebuildToolbar();
+  rebuildSidebar();
 }
 
-function renderToolbar(m: ViewModel): HTMLElement {
-  const toolbar = el('div', 'toolbar');
-  toolbar.append(strong('Step Function Viewer'));
-  toolbar.append(badge(`Query: ${m.queryLanguage}`));
-  if (m.startAt) {
-    toolbar.append(badge(`StartAt: ${m.startAt}`));
+function mountGraph(container: HTMLElement): void {
+  if (!model) {
+    return;
   }
-  toolbar.append(badge(`${m.nodes.length} states`));
-  toolbar.append(badge(`${m.variables.length} variables`));
+  const { nodes, edges } = toLayoutInputs(model);
+  const hash = structureHash(nodes, edges, options.layoutDirection);
+
+  const canvas = createCanvas();
+  svg = canvas.svg;
+  viewportGroup = canvas.viewport;
+  container.append(svg);
+  viewport?.dispose();
+  viewport = new Viewport(svg, viewportGroup);
+
+  // Reuse the previous layout when the structure is unchanged (e.g. an edit
+  // that only touched expressions), otherwise recompute it.
+  if (!lastLayout || hash !== lastHash) {
+    lastLayout = layoutGraph(nodes, edges, options.layoutDirection);
+    lastHash = hash;
+  }
+
+  nodeEls = renderInto(viewportGroup, lastLayout, {
+    onSelectNode: selectNode,
+    onRevealNode: (id) => post({ type: 'selectState', nodeId: id }),
+  });
+  applyHighlight(nodeEls, { selectedNodeId, selectedVariable, ...highlightSets() });
+  viewport.fit({ width: lastLayout.width, height: lastLayout.height });
+}
+
+function teardownGraph(): void {
+  viewport?.dispose();
+  viewport = undefined;
+  svg = undefined;
+  viewportGroup = undefined;
+  nodeEls = new Map();
+}
+
+// --- toolbar ---
+function rebuildToolbar(): void {
+  if (!toolbarEl || !model) {
+    return;
+  }
+  toolbarEl.replaceChildren();
+  toolbarEl.append(strong('Step Function Viewer'));
+  toolbarEl.append(badge(`Query: ${model.queryLanguage}`));
+  if (model.startAt) {
+    toolbarEl.append(badge(`StartAt: ${model.startAt}`));
+  }
+  toolbarEl.append(badge(`${model.nodes.length} states`));
+  toolbarEl.append(badge(`${model.variables.length} variables`));
+
+  if (model.ok) {
+    const controls = el('div', 'view-controls');
+    controls.append(iconButton('+', 'Zoom in', () => viewport?.zoomIn()));
+    controls.append(iconButton('−', 'Zoom out', () => viewport?.zoomOut()));
+    controls.append(iconButton('⤢', 'Fit', () => lastLayout && viewport?.fit(lastLayout)));
+    controls.append(iconButton('⟲', 'Reset', () => viewport?.reset()));
+    toolbarEl.append(controls);
+  }
+
   if (selectedVariable) {
     const clear = button(`Clear highlight: $${selectedVariable} ✕`, 'clear-btn');
     clear.addEventListener('click', () => selectVariable(undefined));
-    toolbar.append(clear);
+    toolbarEl.append(clear);
   }
-  return toolbar;
 }
 
-function renderStateColumn(m: ViewModel): HTMLElement {
-  const { defs, refs } = highlightFor(selectedVariable);
-  const column = el('div', 'states-column');
-  column.append(
-    para('Click a state to inspect its variables. Click a variable to highlight its uses.', 'placeholder'),
-  );
-
-  const list = el('ul', 'state-list');
-  for (const node of m.nodes) {
-    const item = el('li', 'state-item') as HTMLLIElement;
-    item.style.marginLeft = `${depthOf(node) * 18}px`;
-    if (selectedVariable) {
-      if (defs.has(node.id)) {
-        item.classList.add('def');
-      } else if (refs.has(node.id)) {
-        item.classList.add('ref');
-      } else {
-        item.classList.add('dimmed');
-      }
-    }
-    if (node.id === selectedNodeId) {
-      item.classList.add('selected');
-    }
-
-    const header = el('div', 'state-header');
-    header.append(span(node.type, 'type'));
-    header.append(span(node.name, 'name'));
-    if (node.variables.created.length || node.variables.used.length) {
-      header.append(
-        span(`${node.variables.created.length}↑ ${node.variables.used.length}↓`, 'var-counts'),
-      );
-    }
-    const src = button('source ⤴', 'src-btn');
-    src.addEventListener('click', (e) => {
-      e.stopPropagation();
-      post({ type: 'selectState', nodeId: node.id });
-    });
-    header.append(src);
-    header.addEventListener('click', () => selectState(node.id));
-    item.append(header);
-
-    if (node.id === selectedNodeId) {
-      item.append(renderVariableMenu(node));
-    }
-    list.append(item);
+// --- sidebar ---
+function rebuildSidebar(): void {
+  if (!sidebarEl || !model) {
+    return;
   }
-  column.append(list);
-  return column;
+  sidebarEl.replaceChildren();
+
+  const selected = selectedNodeId ? model.nodes.find((n) => n.id === selectedNodeId) : undefined;
+  if (selected) {
+    sidebarEl.append(renderSelectedState(selected));
+  }
+
+  sidebarEl.append(heading('Variables'));
+  if (model.variables.length === 0) {
+    sidebarEl.append(para('No user variables found.', 'placeholder'));
+  } else {
+    sidebarEl.append(renderVariableList(model));
+  }
+  if (selectedVariable) {
+    sidebarEl.append(renderVariableDetail(model.variables.find((v) => v.name === selectedVariable)));
+  }
 }
 
-function renderVariableMenu(node: ViewNode): HTMLElement {
-  const menu = el('div', 'var-menu');
-  menu.append(renderChipGroup('Creates', node.variables.created, 'create'));
-  menu.append(renderChipGroup('Uses', node.variables.used, 'use'));
+function renderSelectedState(node: ViewNode): HTMLElement {
+  const panel = el('div', 'selected-panel');
+  const header = el('div', 'selected-header');
+  header.append(span(node.type, 'type'));
+  header.append(span(node.name, 'name'));
+  const src = button('source ⤴', 'src-btn');
+  src.addEventListener('click', () => post({ type: 'selectState', nodeId: node.id }));
+  header.append(src);
+  panel.append(header);
+  panel.append(renderChipGroup('Creates', node.variables.created, 'create'));
+  panel.append(renderChipGroup('Uses', node.variables.used, 'use'));
   if (!node.variables.created.length && !node.variables.used.length) {
-    menu.append(para('No variables created or used by this state.', 'placeholder'));
+    panel.append(para('No variables created or used by this state.', 'placeholder'));
   }
-  return menu;
+  return panel;
 }
 
 function renderChipGroup(label: string, names: string[], kind: string): HTMLElement {
@@ -182,22 +254,13 @@ function renderChipGroup(label: string, names: string[], kind: string): HTMLElem
     if (name === selectedVariable) {
       chip.classList.add('active');
     }
-    chip.addEventListener('click', (e) => {
-      e.stopPropagation();
-      selectVariable(name);
-    });
+    chip.addEventListener('click', () => selectVariable(name));
     group.append(chip);
   }
   return group;
 }
 
-function renderSidebar(m: ViewModel): HTMLElement {
-  const sidebar = el('div', 'sidebar');
-  sidebar.append(heading('Variables'));
-  if (m.variables.length === 0) {
-    sidebar.append(para('No user variables found.', 'placeholder'));
-    return sidebar;
-  }
+function renderVariableList(m: ViewModel): HTMLElement {
   const list = el('ul', 'var-list');
   for (const info of m.variables) {
     const item = el('li', 'var-item') as HTMLLIElement;
@@ -209,12 +272,7 @@ function renderSidebar(m: ViewModel): HTMLElement {
     item.addEventListener('click', () => selectVariable(info.name));
     list.append(item);
   }
-  sidebar.append(list);
-
-  if (selectedVariable) {
-    sidebar.append(renderVariableDetail(m.variables.find((v) => v.name === selectedVariable)));
-  }
-  return sidebar;
+  return list;
 }
 
 function renderVariableDetail(info: VariableInfo | undefined): HTMLElement {
@@ -223,16 +281,17 @@ function renderVariableDetail(info: VariableInfo | undefined): HTMLElement {
     return detail;
   }
   detail.append(heading(`$${info.name}`));
-  detail.append(renderUsageList('Defined in', info.definitions));
-  detail.append(renderUsageList('Referenced in', info.references));
+  detail.append(renderUsageList('Defined in', info.definitions, 'def'));
+  detail.append(renderUsageList('Referenced in', info.references, 'ref'));
   return detail;
 }
 
 function renderUsageList(
   label: string,
   usages: VariableInfo['definitions'],
+  kind: string,
 ): HTMLElement {
-  const wrap = el('div', 'usage-group');
+  const wrap = el('div', `usage-group ${kind}`);
   wrap.append(span(label, 'chip-label'));
   if (usages.length === 0) {
     wrap.append(span('—', 'placeholder'));
@@ -248,6 +307,15 @@ function renderUsageList(
   }
   wrap.append(list);
   return wrap;
+}
+
+function renderDiagnostics(m: ViewModel): HTMLElement {
+  const diags = el('div', 'diagnostics');
+  diags.append(heading('Diagnostics'));
+  for (const d of m.diagnostics) {
+    diags.append(para(`${d.severity.toUpperCase()}: ${d.message}`, `diag ${d.severity}`));
+  }
+  return diags;
 }
 
 // --- tiny DOM helpers ---
@@ -287,12 +355,18 @@ function button(text: string, className?: string): HTMLButtonElement {
   node.textContent = text;
   return node;
 }
+function iconButton(text: string, title: string, onClick: () => void): HTMLButtonElement {
+  const node = button(text, 'icon-btn');
+  node.title = title;
+  node.addEventListener('click', onClick);
+  return node;
+}
 
 window.addEventListener('message', (event: MessageEvent<ExtensionToWebview>) => {
   const message = event.data;
   if (message.type === 'loadModel') {
     model = message.model;
-    // Drop selections that no longer exist after an edit.
+    options = message.options;
     if (selectedNodeId && !model.nodes.some((n) => n.id === selectedNodeId)) {
       selectedNodeId = undefined;
     }
@@ -301,7 +375,7 @@ window.addEventListener('message', (event: MessageEvent<ExtensionToWebview>) => 
     }
     render();
   } else if (message.type === 'error') {
-    root.innerHTML = '';
+    root.replaceChildren();
     root.append(para(message.message, 'placeholder'));
   }
 });
