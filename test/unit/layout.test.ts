@@ -57,8 +57,17 @@ describe('layoutGraph', () => {
   });
 });
 
+function encloses(box: { x: number; y: number; width: number; height: number }, inner: { x: number; y: number; width: number; height: number }): boolean {
+  return (
+    inner.x - inner.width / 2 >= box.x - box.width / 2 &&
+    inner.x + inner.width / 2 <= box.x + box.width / 2 &&
+    inner.y - inner.height / 2 >= box.y - box.height / 2 &&
+    inner.y + inner.height / 2 <= box.y + box.height / 2
+  );
+}
+
 describe('containers and nested states', () => {
-  it('keeps branch/map entry edges so container -> child nesting stays visible', () => {
+  it('sizes the container box to enclose its child states', () => {
     const clustered: LayoutInputNode[] = [
       { id: 'P', name: 'P', type: 'Parallel', container: true },
       { id: 'P/b0/X', name: 'X', type: 'Pass', container: false, parentId: 'P' },
@@ -69,12 +78,30 @@ describe('containers and nested states', () => {
       { from: 'P/b0/X', to: 'P/b0/Y', kind: 'next' },
     ];
     const laid = layoutGraph(clustered, clusterEdges, 'TB');
-    expect(laid.nodes).toHaveLength(3);
-    expect(laid.edges.some((e) => e.kind === 'branch' && e.to === 'P/b0/X')).toBe(true);
-    // The container sits above its child in a top-to-bottom layout.
     const parent = laid.nodes.find((n) => n.id === 'P')!;
     const child = laid.nodes.find((n) => n.id === 'P/b0/X')!;
-    expect(parent.y).toBeLessThan(child.y);
+    // branch entry edges are implied by containment, not drawn.
+    expect(laid.edges.some((e) => e.kind === 'branch')).toBe(false);
+    expect(encloses(parent, child)).toBe(true);
+  });
+
+  it("places a container's Next successor OUTSIDE its box", () => {
+    // Regression for the "is Done inside the Map?" ambiguity.
+    const nodes: LayoutInputNode[] = [
+      { id: 'M', name: 'M', type: 'Map', container: true },
+      { id: 'M/item/Step', name: 'Step', type: 'Pass', container: false, parentId: 'M' },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+    ];
+    const edges: LayoutInputEdge[] = [
+      { from: 'M', to: 'M/item/Step', kind: 'map' },
+      { from: 'M', to: 'Done', kind: 'next' },
+    ];
+    const laid = layoutGraph(nodes, edges, 'TB');
+    const box = laid.nodes.find((n) => n.id === 'M')!;
+    const step = laid.nodes.find((n) => n.id === 'M/item/Step')!;
+    const done = laid.nodes.find((n) => n.id === 'Done')!;
+    expect(encloses(box, step)).toBe(true);
+    expect(encloses(box, done)).toBe(false);
   });
 
   it('lays out the bundled example (Parallel + Map) without throwing', () => {
@@ -96,12 +123,18 @@ describe('containers and nested states', () => {
     const laid = layoutGraph(inputs.nodes, inputs.edges, 'TB');
     expect(laid.nodes.length).toBe(model.nodes.length);
     expect(laid.width).toBeGreaterThan(0);
-    // The two containers (PriorityFulfillment, ShipItems) are present as nodes.
+    // The two containers (PriorityFulfillment, ShipItems) are present as nodes,
+    // and each encloses its own children but not the shared "Done" successor.
     const containers = laid.nodes.filter((n) => n.container);
     expect(containers.length).toBeGreaterThanOrEqual(2);
-    // Their branch/map entry edges are routed.
-    expect(laid.edges.some((e) => e.kind === 'branch')).toBe(true);
-    expect(laid.edges.some((e) => e.kind === 'map')).toBe(true);
+    const done = laid.nodes.find((n) => n.id === 'Done')!;
+    for (const c of containers) {
+      const children = laid.nodes.filter((n) => n.id.startsWith(`${c.id}/`));
+      for (const child of children) {
+        expect(encloses(c, child)).toBe(true);
+      }
+      expect(encloses(c, done)).toBe(false);
+    }
   });
 });
 

@@ -123,16 +123,52 @@ body {
   font-size: 13px;
   font-weight: 600;
 }
+/* Container boxes: the box IS the Parallel/Map, drawn around its child states. */
 .node.container .node-box {
   stroke-dasharray: 5 3;
-  fill: var(--vscode-editor-background);
-  fill-opacity: 0.4;
+  stroke-width: 1.5px;
+  fill-opacity: 0.07;
+}
+.node.container.type-Parallel .node-box {
+  stroke: var(--scope-parallel-color);
+  fill: var(--scope-parallel-color);
+}
+.node.container.type-Map .node-box {
+  stroke: var(--scope-map-color);
+  fill: var(--scope-map-color);
 }
 .node-header {
-  fill: var(--vscode-descriptionForeground, var(--vscode-foreground));
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.05em;
+}
+.node.container.type-Parallel .node-header {
+  fill: var(--scope-parallel-color);
+}
+.node.container.type-Map .node-header {
+  fill: var(--scope-map-color);
+}
+
+/* Terminal states render as a small "end" ball. */
+.node.terminal .end-ball {
+  stroke-width: 2px;
+}
+.node.type-Succeed .end-ball {
+  fill: var(--vscode-charts-green, #4caf50);
+  stroke: var(--vscode-charts-green, #4caf50);
+}
+.node.type-Fail .end-ball {
+  fill: var(--vscode-charts-red, #f14c4c);
+  stroke: var(--vscode-charts-red, #f14c4c);
+}
+.end-glyph {
+  fill: var(--vscode-editor-background);
+  font-size: 14px;
+  font-weight: 700;
+}
+.node.terminal:focus-visible .end-ball,
+.node.terminal.selected .end-ball {
+  stroke: var(--vscode-focusBorder);
 }
 
 /* Accent per state type via the left edge of the box. */
@@ -142,18 +178,7 @@ body {
 .node.type-Choice .node-box {
   stroke: var(--vscode-charts-yellow, #d7a000);
 }
-.node.type-Parallel .node-box {
-  stroke: var(--vscode-charts-purple, #b180d7);
-}
-.node.type-Map .node-box {
-  stroke: var(--scope-map-color);
-}
-.node.type-Succeed .node-box {
-  stroke: var(--vscode-charts-green, #4caf50);
-}
-.node.type-Fail .node-box {
-  stroke: var(--vscode-charts-red, #f14c4c);
-}
+/* Parallel/Map container boxes and Succeed/Fail balls are styled below. */
 
 /* Selection + variable highlight. */
 .node.selected .node-box {
@@ -170,32 +195,6 @@ body {
 }
 .node.dimmed {
   opacity: 0.25;
-}
-
-/* --- scope boxes (Parallel / Map extent) --- */
-.scope-box {
-  fill-opacity: 0.07;
-  stroke-width: 1.5px;
-  stroke-dasharray: 4 4;
-}
-.scope.parallel .scope-box {
-  stroke: var(--scope-parallel-color);
-  fill: var(--scope-parallel-color);
-}
-.scope.map .scope-box {
-  stroke: var(--scope-map-color);
-  fill: var(--scope-map-color);
-}
-.scope-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-.scope.parallel .scope-label {
-  fill: var(--scope-parallel-color);
-}
-.scope.map .scope-label {
-  fill: var(--scope-map-color);
 }
 
 /* --- edges --- */

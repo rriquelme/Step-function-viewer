@@ -38,10 +38,8 @@ export function renderInto(
 ): Map<string, SVGGElement> {
   viewport.replaceChildren();
 
-  // Scope boxes behind everything, so the extent of each Parallel/Map is clear.
-  viewport.append(renderScopeBoxes(laid));
-
-  // Edges next so nodes paint on top.
+  // Edges first so nodes paint on top. (Container boxes are nodes themselves and
+  // are emitted parent-before-child, so a container paints behind its contents.)
   const edgeLayer = svgEl('g', { class: 'edge-layer' });
   for (const edge of laid.edges) {
     edgeLayer.append(...renderEdge(edge));
@@ -61,65 +59,6 @@ export function renderInto(
   viewport.append(svgEl('g', { class: 'data-flow-layer' }));
 
   return nodeEls;
-}
-
-/**
- * Draw a translucent boxed region around each Parallel/Map container and all of
- * its nested states, so the scope of each is obvious (à la Workflow Studio).
- * Membership is derived from the scope-qualified node ids (e.g. "Map/item/Step").
- */
-function renderScopeBoxes(laid: LaidOutGraph): SVGGElement {
-  const layer = svgEl('g', { class: 'scope-layer' }) as SVGGElement;
-  // Outer containers first so nested ones paint on top.
-  const containers = laid.nodes
-    .filter((n) => n.container)
-    .sort((a, b) => a.id.split('/').length - b.id.split('/').length);
-
-  for (const c of containers) {
-    const members = laid.nodes.filter((n) => n.id === c.id || n.id.startsWith(`${c.id}/`));
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const m of members) {
-      minX = Math.min(minX, m.x - m.width / 2);
-      maxX = Math.max(maxX, m.x + m.width / 2);
-      minY = Math.min(minY, m.y - m.height / 2);
-      maxY = Math.max(maxY, m.y + m.height / 2);
-    }
-    if (!Number.isFinite(minX)) {
-      continue;
-    }
-    const pad = 16;
-    const labelGap = 20;
-    const x = minX - pad;
-    const y = minY - pad - labelGap;
-    const w = maxX - minX + pad * 2;
-    const h = maxY - minY + pad * 2 + labelGap;
-    const kind = c.type === 'Map' ? 'map' : 'parallel';
-
-    const g = svgEl('g', { class: `scope ${kind}` });
-    g.append(
-      svgEl('rect', {
-        class: 'scope-box',
-        x: x.toFixed(1),
-        y: y.toFixed(1),
-        width: w.toFixed(1),
-        height: h.toFixed(1),
-        rx: '10',
-        ry: '10',
-      }),
-    );
-    const label = svgEl('text', {
-      class: 'scope-label',
-      x: (x + 12).toFixed(1),
-      y: (y + 15).toFixed(1),
-    });
-    label.textContent = `${c.type.toUpperCase()}: ${truncate(c.name, 28)}`;
-    g.append(label);
-    layer.append(g);
-  }
-  return layer;
 }
 
 /**
@@ -189,8 +128,9 @@ export function applyHighlight(nodeEls: Map<string, SVGGElement>, state: Highlig
 function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   const x = node.x - node.width / 2;
   const y = node.y - node.height / 2;
+  const terminal = node.type === 'Succeed' || node.type === 'Fail';
   const g = svgEl('g', {
-    class: `node type-${node.type}${node.container ? ' container' : ''}`,
+    class: `node type-${node.type}${node.container ? ' container' : ''}${terminal ? ' terminal' : ''}`,
     'data-id': node.id,
     transform: `translate(${x}, ${y})`,
     tabindex: '0',
@@ -202,32 +142,41 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   title.textContent = `${node.type}: ${node.name}`;
   g.append(title);
 
-  const rect = svgEl('rect', {
-    class: 'node-box',
-    width: String(node.width),
-    height: String(node.height),
-    rx: '8',
-    ry: '8',
-  });
-  g.append(rect);
-
-  const type = svgEl('text', {
-    class: 'node-type',
-    x: String(node.width / 2),
-    y: '18',
-    'text-anchor': 'middle',
-  });
-  type.textContent = node.container ? `▦ ${node.type.toUpperCase()}` : node.type.toUpperCase();
-  g.append(type);
-
-  const name = svgEl('text', {
-    class: 'node-name',
-    x: String(node.width / 2),
-    y: '37',
-    'text-anchor': 'middle',
-  });
-  name.textContent = truncate(node.name, 32);
-  g.append(name);
+  if (node.container) {
+    // The container is the scope box; its children are drawn inside it.
+    g.append(
+      svgEl('rect', {
+        class: 'node-box',
+        width: String(node.width),
+        height: String(node.height),
+        rx: '10',
+        ry: '10',
+      }),
+    );
+    const header = svgEl('text', { class: 'node-header', x: '12', y: '17' });
+    header.textContent = `${node.type.toUpperCase()}: ${truncate(node.name, 30)}`;
+    g.append(header);
+  } else if (terminal) {
+    // Terminal state: a small "end" ball with a glyph and a label beneath it.
+    const cx = node.width / 2;
+    g.append(svgEl('circle', { class: 'end-ball', cx: String(cx), cy: '18', r: '14' }));
+    const glyph = svgEl('text', { class: 'end-glyph', x: String(cx), y: '23', 'text-anchor': 'middle' });
+    glyph.textContent = node.type === 'Succeed' ? '✓' : '✕';
+    g.append(glyph);
+    const name = svgEl('text', { class: 'node-name', x: String(cx), y: '46', 'text-anchor': 'middle' });
+    name.textContent = truncate(node.name, 24);
+    g.append(name);
+  } else {
+    g.append(
+      svgEl('rect', { class: 'node-box', width: String(node.width), height: String(node.height), rx: '8', ry: '8' }),
+    );
+    const type = svgEl('text', { class: 'node-type', x: String(node.width / 2), y: '18', 'text-anchor': 'middle' });
+    type.textContent = node.type.toUpperCase();
+    g.append(type);
+    const name = svgEl('text', { class: 'node-name', x: String(node.width / 2), y: '37', 'text-anchor': 'middle' });
+    name.textContent = truncate(node.name, 32);
+    g.append(name);
+  }
 
   g.addEventListener('click', (e) => {
     e.stopPropagation();

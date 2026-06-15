@@ -50,80 +50,172 @@ export interface LaidOutGraph {
 }
 
 const NODE_HEIGHT = 52;
+const TERMINAL_W = 86;
+const TERMINAL_H = 58;
 const CHAR_WIDTH = 7.5;
 const MIN_WIDTH = 120;
 const MAX_WIDTH = 300;
+const ROOT_MARGIN = 24;
+const SCOPE_PAD = 18; // padding between a container box and its contents
+const HEADER_H = 26; // top strip of a container box reserved for its label
+
+const ROOT = '__root__';
 
 export function nodeWidth(name: string): number {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(name.length * CHAR_WIDTH) + 36));
 }
 
+function isTerminal(type: string): boolean {
+  return type === 'Succeed' || type === 'Fail';
+}
+
+function leafSize(node: LayoutInputNode): { width: number; height: number } {
+  if (isTerminal(node.type)) {
+    return { width: Math.max(TERMINAL_W, node.name.length * CHAR_WIDTH), height: TERMINAL_H };
+  }
+  return { width: nodeWidth(node.name), height: NODE_HEIGHT };
+}
+
+interface SubLayout {
+  width: number;
+  height: number;
+  pos: Map<string, { x: number; y: number; w: number; h: number }>;
+  subByContainer: Map<string, SubLayout>;
+  routes: LaidOutEdge[];
+}
+
+/**
+ * Lays out the machine with true nesting: each Parallel/Map sub-graph is laid
+ * out in isolation and inserted into its parent as a single block sized to fit
+ * its contents. This guarantees a container's box encloses exactly its own
+ * states — siblings (e.g. a Map's `Next` successor) land outside the box.
+ */
 export function layoutGraph(
   nodes: LayoutInputNode[],
   edges: LayoutInputEdge[],
   rankdir: Rankdir = 'TB',
 ): LaidOutGraph {
-  // Flat layered layout. (We intentionally avoid dagre compound/cluster nodes:
-  // this dagre version throws when an edge attaches to a cluster parent, which
-  // our Parallel/Map container states always do. Instead, containers are drawn
-  // as distinct nodes and the `branch`/`map` edges keep the nesting legible.)
-  const g = new dagre.graphlib.Graph({ multigraph: true });
-  g.setGraph({ rankdir, nodesep: 45, ranksep: 65, marginx: 24, marginy: 24 });
-  g.setDefaultEdgeLabel(() => ({}));
-
-  const known = new Set(nodes.map((n) => n.id));
-
-  for (const node of nodes) {
-    g.setNode(node.id, {
-      width: nodeWidth(node.name),
-      height: NODE_HEIGHT,
-    });
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const childrenByParent = new Map<string, LayoutInputNode[]>();
+  for (const n of nodes) {
+    const key = n.parentId && nodeById.has(n.parentId) ? n.parentId : ROOT;
+    (childrenByParent.get(key) ?? childrenByParent.set(key, []).get(key)!).push(n);
   }
+  const scopeKeyOf = (id: string): string => {
+    const p = nodeById.get(id)?.parentId;
+    return p && nodeById.has(p) ? p : ROOT;
+  };
 
-  edges.forEach((edge, i) => {
-    // Skip dangling transitions (already surfaced as diagnostics).
-    if (!known.has(edge.from) || !known.has(edge.to)) {
-      return;
+  const layoutScope = (scopeKey: string): SubLayout => {
+    const members = childrenByParent.get(scopeKey) ?? [];
+    const subByContainer = new Map<string, SubLayout>();
+    const g = new dagre.graphlib.Graph({ multigraph: true });
+    g.setGraph({ rankdir, nodesep: 45, ranksep: 65, marginx: 0, marginy: 0 });
+    g.setDefaultEdgeLabel(() => ({}));
+
+    for (const m of members) {
+      if (m.container) {
+        const sub = layoutScope(m.id);
+        subByContainer.set(m.id, sub);
+        g.setNode(m.id, {
+          width: sub.width + SCOPE_PAD * 2,
+          height: sub.height + SCOPE_PAD * 2 + HEADER_H,
+        });
+      } else {
+        g.setNode(m.id, leafSize(m));
+      }
     }
-    const label: dagre.Label = {};
-    if (edge.label) {
-      label.width = Math.min(160, edge.label.length * 6 + 8);
-      label.height = 14;
-    }
-    g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
-  });
 
-  dagre.layout(g);
-
-  const laidOutNodes: LaidOutNode[] = nodes
-    .filter((n) => g.hasNode(n.id))
-    .map((n) => {
-      const d = g.node(n.id);
-      return { ...n, x: d.x, y: d.y, width: d.width, height: d.height };
+    const ids = new Set(members.map((m) => m.id));
+    edges.forEach((edge, i) => {
+      if (ids.has(edge.from) && ids.has(edge.to)) {
+        const label: dagre.Label = {};
+        if (edge.label) {
+          label.width = Math.min(160, edge.label.length * 6 + 8);
+          label.height = 14;
+        }
+        g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
+      }
     });
 
+    dagre.layout(g);
+
+    const pos = new Map<string, { x: number; y: number; w: number; h: number }>();
+    for (const m of members) {
+      const d = g.node(m.id);
+      pos.set(m.id, { x: d.x, y: d.y, w: d.width, h: d.height });
+    }
+    const routes: LaidOutEdge[] = [];
+    for (const e of g.edges()) {
+      const original = findEdge(edges, e.v, e.w, e.name);
+      if (!original) {
+        continue;
+      }
+      const d = g.edge(e);
+      routes.push({
+        from: e.v,
+        to: e.w,
+        kind: original.kind,
+        label: original.label,
+        points: (d.points ?? []).map((p) => ({ x: p.x, y: p.y })),
+      });
+    }
+
+    const gl = g.graph();
+    return { width: gl.width ?? 0, height: gl.height ?? 0, pos, subByContainer, routes };
+  };
+
+  const laidOutNodes: LaidOutNode[] = [];
   const laidOutEdges: LaidOutEdge[] = [];
-  for (const e of g.edges()) {
-    const original = findEdge(edges, e.v, e.w, e.name);
-    if (!original) {
+  const centers = new Map<string, Point>();
+
+  const place = (scope: SubLayout, originX: number, originY: number): void => {
+    for (const r of scope.routes) {
+      laidOutEdges.push({
+        ...r,
+        points: r.points.map((p) => ({ x: p.x + originX, y: p.y + originY })),
+      });
+    }
+    for (const [id, p] of scope.pos) {
+      const node = nodeById.get(id)!;
+      const cx = originX + p.x;
+      const cy = originY + p.y;
+      centers.set(id, { x: cx, y: cy });
+      laidOutNodes.push({ ...node, x: cx, y: cy, width: p.w, height: p.h });
+      if (node.container) {
+        const sub = scope.subByContainer.get(id);
+        if (sub) {
+          place(sub, cx - p.w / 2 + SCOPE_PAD, cy - p.h / 2 + SCOPE_PAD + HEADER_H);
+        }
+      }
+    }
+  };
+
+  const root = layoutScope(ROOT);
+  place(root, ROOT_MARGIN, ROOT_MARGIN);
+
+  // Cross-scope edges aren't routed by any single dagre pass. `branch`/`map`
+  // entry edges are implied by containment, so we drop them; any other crossing
+  // edge (e.g. a Catch escaping a branch) is drawn as a straight connector.
+  for (const edge of edges) {
+    if (scopeKeyOf(edge.from) === scopeKeyOf(edge.to)) {
       continue;
     }
-    const d = g.edge(e);
-    laidOutEdges.push({
-      from: e.v,
-      to: e.w,
-      kind: original.kind,
-      label: original.label,
-      points: (d.points ?? []).map((p) => ({ x: p.x, y: p.y })),
-    });
+    if (edge.kind === 'branch' || edge.kind === 'map') {
+      continue;
+    }
+    const a = centers.get(edge.from);
+    const b = centers.get(edge.to);
+    if (a && b) {
+      laidOutEdges.push({ from: edge.from, to: edge.to, kind: edge.kind, label: edge.label, points: [a, b] });
+    }
   }
 
-  const graphLabel = g.graph();
   return {
     nodes: laidOutNodes,
     edges: laidOutEdges,
-    width: graphLabel.width ?? 0,
-    height: graphLabel.height ?? 0,
+    width: root.width + ROOT_MARGIN * 2,
+    height: root.height + ROOT_MARGIN * 2,
   };
 }
 

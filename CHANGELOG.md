@@ -3,14 +3,28 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.3]
+
+### Changed
+
+- **Nested layout:** Parallel/Map sub-graphs are now laid out in isolation and
+  inserted into the parent as a single block, so a container's box encloses
+  exactly its own states. A container's `Next` successor (e.g. a `Done` state
+  after a Map) is now placed clearly *outside* the box, removing the earlier
+  ambiguity about what belongs to a Parallel/Map.
+
+### Added
+
+- **End balls:** terminal states (`Succeed` / `Fail`) render as a small circle
+  (green ✓ / red ✕) instead of a rectangle, making endpoints obvious.
+
 ## [0.0.2]
 
 ### Added
 
-- **Scope boxes:** each Parallel and Map now draws a labelled, translucent
-  boundary around all of its nested states, so the extent of a branch / item
-  processor is obvious at a glance. Parallel scopes are purple and Map scopes
-  are teal, with matching node borders and `branch` / `map` edge colors.
+- **Scope boxes:** each Parallel and Map draws a labelled, translucent boundary
+  around its nested states. Parallel scopes are purple and Map scopes are teal,
+  with matching node borders and `branch` / `map` edge colors.
 
 ## [0.0.1]
 

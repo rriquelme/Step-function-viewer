@@ -44,31 +44,30 @@ describe('render', () => {
     expect(nodeEls.get('A')!.classList.contains('container')).toBe(false);
   });
 
-  it('draws a scope box per container, colored by type', () => {
+  it('renders containers as boxes and terminals as end balls', () => {
     const scopeNodes = [
-      { id: 'P', name: 'P', type: 'Parallel', container: true },
-      { id: 'P/b0/X', name: 'X', type: 'Pass', container: false, parentId: 'P' },
       { id: 'M', name: 'M', type: 'Map', container: true },
       { id: 'M/item/Y', name: 'Y', type: 'Pass', container: false, parentId: 'M' },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
     ];
     const scopeEdges = [
-      { from: 'P', to: 'P/b0/X', kind: 'branch' as const, label: undefined },
-      { from: 'P', to: 'M', kind: 'next' as const, label: undefined },
       { from: 'M', to: 'M/item/Y', kind: 'map' as const, label: undefined },
+      { from: 'M', to: 'Done', kind: 'next' as const, label: undefined },
     ];
     const laid = layoutGraph(scopeNodes, scopeEdges, 'TB');
     const { viewport } = createCanvas();
-    renderInto(viewport, laid, { onSelectNode: () => {}, onRevealNode: () => {} });
+    const els = renderInto(viewport, laid, { onSelectNode: () => {}, onRevealNode: () => {} });
 
-    expect(viewport.querySelectorAll('g.scope.parallel').length).toBe(1);
-    expect(viewport.querySelectorAll('g.scope.map').length).toBe(1);
-    // The Parallel scope box must enclose its child node.
-    const box = viewport.querySelector('g.scope.parallel rect.scope-box')!;
-    const x = Number(box.getAttribute('x'));
-    const w = Number(box.getAttribute('width'));
-    const child = laid.nodes.find((n) => n.id === 'P/b0/X')!;
-    expect(x).toBeLessThanOrEqual(child.x - child.width / 2);
-    expect(x + w).toBeGreaterThanOrEqual(child.x + child.width / 2);
+    // Map container is a box with a header.
+    const mapEl = els.get('M')!;
+    expect(mapEl.classList.contains('container')).toBe(true);
+    expect(mapEl.querySelector('text.node-header')?.textContent).toContain('MAP');
+
+    // Succeed terminal renders a ball, not a rectangle.
+    const doneEl = els.get('Done')!;
+    expect(doneEl.classList.contains('terminal')).toBe(true);
+    expect(doneEl.querySelector('circle.end-ball')).not.toBeNull();
+    expect(doneEl.querySelector('rect.node-box')).toBeNull();
   });
 
   it('applyHighlight toggles def/ref/dimmed/selected classes', () => {
