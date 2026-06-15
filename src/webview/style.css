@@ -38,7 +38,14 @@ body {
 }
 
 .toolbar .title {
+  display: flex;
+  flex-direction: column;
   font-weight: 600;
+  font-size: 0.95em;
+  line-height: 1.02;
+  flex: 0 0 auto;
+}
+.title-line {
   white-space: nowrap;
 }
 

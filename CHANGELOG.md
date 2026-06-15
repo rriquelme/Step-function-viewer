@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.8]
+
+### Changed
+
+- **Toolbar order & title:** the title now stacks on three lines
+  (Step / Function / Viewer) to save horizontal space, and the items are ordered
+  title → run info (2×2) → zoom tools → finder → highlight controls.
+
 ## [0.0.7]
 
 ### Changed

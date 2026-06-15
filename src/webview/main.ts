@@ -238,25 +238,30 @@ function rebuildToolbar(): void {
   }
   toolbarEl.replaceChildren();
 
-  const title = strong('Step Function Viewer');
-  title.className = 'title';
+  // 1. Title stacked on three lines to save horizontal space.
+  const title = el('div', 'title');
+  for (const word of ['Step', 'Function', 'Viewer']) {
+    title.append(span(word, 'title-line'));
+  }
   toolbarEl.append(title);
 
-  if (model.ok) {
-    toolbarEl.append(renderFinder());
-  }
-
+  // 2. Run info as a 2x2 grid (Query/StartAt, states/variables).
   toolbarEl.append(renderInfo(model));
 
   if (model.ok) {
+    // 3. Zoom tools.
     const controls = el('div', 'view-controls');
     controls.append(iconButton('+', 'Zoom in', () => viewport?.zoomIn()));
     controls.append(iconButton('−', 'Zoom out', () => viewport?.zoomOut()));
     controls.append(iconButton('⤢', 'Fit', () => lastLayout && viewport?.fit(lastLayout)));
     controls.append(iconButton('⟲', 'Reset', () => viewport?.reset()));
     toolbarEl.append(controls);
+
+    // 4. Finder.
+    toolbarEl.append(renderFinder());
   }
 
+  // 5. Filters / highlights.
   if (selectedVariable) {
     const clear = button(`Clear $${selectedVariable} ✕`, 'clear-btn');
     clear.addEventListener('click', () => selectVariable(undefined));
@@ -504,11 +509,6 @@ function para(text: string, className?: string): HTMLElement {
 }
 function heading(text: string): HTMLElement {
   const node = el('h2');
-  node.textContent = text;
-  return node;
-}
-function strong(text: string): HTMLElement {
-  const node = el('strong');
   node.textContent = text;
   return node;
 }
