@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.7]
+
+### Changed
+
+- **Tidier toolbar:** the badge "chips" are gone. Run info is now plain text in
+  two compact columns (Query / StartAt, then states / variables), and the search
+  box sits on the left and grows to fill — so it stays usable in split view. The
+  toolbar wraps gracefully when narrow.
+
 ## [0.0.6]
 
 ### Changed

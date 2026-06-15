@@ -26,22 +26,37 @@ body {
 
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 6px 14px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--vscode-panel-border);
   position: sticky;
   top: 0;
   background: var(--vscode-editor-background);
+  z-index: 1;
 }
 
-.badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.85em;
-  background: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
+.toolbar .title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Plain, two-column run info (no badges). */
+.toolbar-info {
+  display: flex;
+  gap: 18px;
+  flex: 0 0 auto;
+}
+.info-col {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8em;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.info-label {
+  opacity: 0.65;
 }
 
 .content {
@@ -92,9 +107,11 @@ body {
 }
 
 .finder {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 4px;
+  flex: 1 1 180px;
+  min-width: 140px;
 }
 .finder-input {
   font-family: inherit;
@@ -104,7 +121,8 @@ body {
   border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
   border-radius: 4px;
   padding: 3px 8px;
-  min-width: 200px;
+  flex: 1 1 auto;
+  min-width: 100px;
 }
 .finder-input:focus {
   outline: 1px solid var(--vscode-focusBorder);

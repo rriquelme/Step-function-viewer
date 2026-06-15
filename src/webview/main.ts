@@ -237,16 +237,18 @@ function rebuildToolbar(): void {
     return;
   }
   toolbarEl.replaceChildren();
-  toolbarEl.append(strong('Step Function Viewer'));
-  toolbarEl.append(badge(`Query: ${model.queryLanguage}`));
-  if (model.startAt) {
-    toolbarEl.append(badge(`StartAt: ${model.startAt}`));
-  }
-  toolbarEl.append(badge(`${model.nodes.length} states`));
-  toolbarEl.append(badge(`${model.variables.length} variables`));
+
+  const title = strong('Step Function Viewer');
+  title.className = 'title';
+  toolbarEl.append(title);
 
   if (model.ok) {
     toolbarEl.append(renderFinder());
+  }
+
+  toolbarEl.append(renderInfo(model));
+
+  if (model.ok) {
     const controls = el('div', 'view-controls');
     controls.append(iconButton('+', 'Zoom in', () => viewport?.zoomIn()));
     controls.append(iconButton('−', 'Zoom out', () => viewport?.zoomOut()));
@@ -256,10 +258,36 @@ function rebuildToolbar(): void {
   }
 
   if (selectedVariable) {
-    const clear = button(`Clear highlight: $${selectedVariable} ✕`, 'clear-btn');
+    const clear = button(`Clear $${selectedVariable} ✕`, 'clear-btn');
     clear.addEventListener('click', () => selectVariable(undefined));
     toolbarEl.append(clear);
   }
+}
+
+function renderInfo(m: ViewModel): HTMLElement {
+  const info = el('div', 'toolbar-info');
+
+  const colA = el('div', 'info-col');
+  colA.append(infoLine('Query', m.queryLanguage));
+  if (m.startAt) {
+    colA.append(infoLine('StartAt', m.startAt));
+  }
+
+  const colB = el('div', 'info-col');
+  colB.append(span(`${m.nodes.length} states`, 'info-line'));
+  colB.append(span(`${m.variables.length} variables`, 'info-line'));
+
+  info.append(colA, colB);
+  return info;
+}
+
+function infoLine(label: string, value: string): HTMLElement {
+  const line = el('span', 'info-line');
+  const tag = el('span', 'info-label');
+  tag.textContent = `${label}: `;
+  line.append(tag);
+  line.append(document.createTextNode(value));
+  return line;
 }
 
 function renderFinder(): HTMLElement {
@@ -483,9 +511,6 @@ function strong(text: string): HTMLElement {
   const node = el('strong');
   node.textContent = text;
   return node;
-}
-function badge(text: string): HTMLElement {
-  return span(text, 'badge');
 }
 function button(text: string, className?: string): HTMLButtonElement {
   const node = el('button', className) as HTMLButtonElement;
