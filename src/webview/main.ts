@@ -21,6 +21,7 @@ import {
 } from './graph/render';
 import { Viewport } from './graph/viewport';
 import { structureHash } from './graph/structure';
+import { finderMode, findMatchingNodeIds } from './finder';
 
 interface VsCodeApi {
   postMessage(message: WebviewToExtension): void;
@@ -97,19 +98,9 @@ function selectNode(id: string): void {
   refreshHighlight();
 }
 
-// --- finder: search states by name, type, resource, or invoked function ---
-function nodeMatchesQuery(node: ViewNode, q: string): boolean {
-  return (
-    node.name.toLowerCase().includes(q) ||
-    node.type.toLowerCase().includes(q) ||
-    (node.resource?.toLowerCase().includes(q) ?? false) ||
-    (node.functionName?.toLowerCase().includes(q) ?? false)
-  );
-}
-
+// --- finder: search states (plain) or variables (leading "$") ---
 function recomputeFinder(): void {
-  const q = finderQuery.trim().toLowerCase();
-  finderMatches = q && model ? model.nodes.filter((n) => nodeMatchesQuery(n, q)).map((n) => n.id) : [];
+  finderMatches = model ? findMatchingNodeIds(model, finderQuery) : [];
   if (finderIndex >= finderMatches.length) {
     finderIndex = 0;
   }
@@ -121,11 +112,15 @@ function updateFinderCount(): void {
   if (!finderCountEl) {
     return;
   }
-  finderCountEl.textContent = finderQuery.trim()
-    ? finderMatches.length
-      ? `${finderIndex + 1}/${finderMatches.length}`
-      : '0/0'
-    : '';
+  const q = finderQuery.trim();
+  if (!q || q === '$') {
+    finderCountEl.textContent = '';
+    return;
+  }
+  const prefix = finderMode(q) === 'variable' ? 'var ' : '';
+  finderCountEl.textContent = finderMatches.length
+    ? `${prefix}${finderIndex + 1}/${finderMatches.length}`
+    : `${prefix}0/0`;
 }
 
 function gotoMatch(delta: number): void {
@@ -269,9 +264,10 @@ function renderFinder(): HTMLElement {
   const wrap = el('div', 'finder');
   const input = el('input', 'finder-input') as HTMLInputElement;
   input.type = 'search';
-  input.placeholder = 'Find state / type / function…';
+  input.placeholder = 'Find state / function — $name for variables';
   input.value = finderQuery;
-  input.setAttribute('aria-label', 'Find state, type, or function');
+  input.setAttribute('aria-label', 'Find state or function; prefix with $ to find a variable');
+  input.title = 'Type to find states by name/type/function. Prefix with $ to find a variable (e.g. $orderId).';
   input.addEventListener('input', () => {
     finderQuery = input.value;
     finderIndex = 0;

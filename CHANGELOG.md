@@ -3,6 +3,16 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.5]
+
+### Added
+
+- **Finder now searches variables too.** Prefix the query with `$` (e.g.
+  `$orderId`) to search variables instead of states — matches are the states
+  that define or reference the variable, so cycling pans through its usages. The
+  `$` convention disambiguates a state and a variable that share a name; the
+  match counter shows `var n/m` in variable mode.
+
 ## [0.0.4]
 
 ### Added

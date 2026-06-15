@@ -29,8 +29,9 @@ referenced — a data-flow lens over your state machine.
   transitions, unreachable states, states with neither `Next` nor `End`.
 - Click-to-source: reveal any state's JSON in the document (node double-click or
   the sidebar "source" button).
-- **Finder:** search the graph by state name, type, or invoked function/resource;
-  cycle through matches (Enter / ‹ ›) with the graph panning to each.
+- **Finder:** search the graph by state name, type, or invoked function/resource,
+  or prefix with `$` (e.g. `$orderId`) to find a variable's usages; cycle through
+  matches (Enter / ‹ ›) with the graph panning to each.
 
 ## Settings
 
