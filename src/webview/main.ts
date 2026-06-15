@@ -12,7 +12,13 @@ import {
   type LayoutInputNode,
   layoutGraph,
 } from './graph/layout';
-import { applyHighlight, createCanvas, renderInto, updateDataFlow } from './graph/render';
+import {
+  applyHighlight,
+  applyMatches,
+  createCanvas,
+  renderInto,
+  updateDataFlow,
+} from './graph/render';
 import { Viewport } from './graph/viewport';
 import { structureHash } from './graph/structure';
 
@@ -31,6 +37,12 @@ let model: ViewModel | undefined;
 let options: ViewOptions = { layoutDirection: 'TB' };
 let selectedNodeId: string | undefined;
 let selectedVariable: string | undefined;
+
+// Finder state.
+let finderQuery = '';
+let finderMatches: string[] = [];
+let finderIndex = 0;
+let finderCountEl: HTMLElement | undefined;
 
 // --- persistent graph objects (survive selection changes to preserve zoom) ---
 let svg: SVGSVGElement | undefined;
@@ -83,6 +95,55 @@ function selectVariable(name: string | undefined): void {
 function selectNode(id: string): void {
   selectedNodeId = selectedNodeId === id ? undefined : id;
   refreshHighlight();
+}
+
+// --- finder: search states by name, type, resource, or invoked function ---
+function nodeMatchesQuery(node: ViewNode, q: string): boolean {
+  return (
+    node.name.toLowerCase().includes(q) ||
+    node.type.toLowerCase().includes(q) ||
+    (node.resource?.toLowerCase().includes(q) ?? false) ||
+    (node.functionName?.toLowerCase().includes(q) ?? false)
+  );
+}
+
+function recomputeFinder(): void {
+  const q = finderQuery.trim().toLowerCase();
+  finderMatches = q && model ? model.nodes.filter((n) => nodeMatchesQuery(n, q)).map((n) => n.id) : [];
+  if (finderIndex >= finderMatches.length) {
+    finderIndex = 0;
+  }
+  applyMatches(nodeEls, new Set(finderMatches), finderMatches[finderIndex]);
+  updateFinderCount();
+}
+
+function updateFinderCount(): void {
+  if (!finderCountEl) {
+    return;
+  }
+  finderCountEl.textContent = finderQuery.trim()
+    ? finderMatches.length
+      ? `${finderIndex + 1}/${finderMatches.length}`
+      : '0/0'
+    : '';
+}
+
+function gotoMatch(delta: number): void {
+  if (finderMatches.length === 0) {
+    return;
+  }
+  finderIndex = (finderIndex + delta + finderMatches.length) % finderMatches.length;
+  applyMatches(nodeEls, new Set(finderMatches), finderMatches[finderIndex]);
+  updateFinderCount();
+  centerCurrentMatch();
+}
+
+function centerCurrentMatch(): void {
+  const id = finderMatches[finderIndex];
+  const node = lastLayout?.nodes.find((n) => n.id === id);
+  if (node && viewport) {
+    viewport.centerOn(node.x, node.y);
+  }
 }
 
 /** Re-apply highlight classes and rebuild the cheap DOM (toolbar + sidebar). */
@@ -161,6 +222,7 @@ function mountGraph(container: HTMLElement): void {
   const sets = highlightSets();
   applyHighlight(nodeEls, { selectedNodeId, selectedVariable, ...sets });
   updateDataFlow(viewportGroup, lastLayout, sets.defs, sets.refs);
+  recomputeFinder();
   viewport.fit({ width: lastLayout.width, height: lastLayout.height });
 }
 
@@ -187,6 +249,7 @@ function rebuildToolbar(): void {
   toolbarEl.append(badge(`${model.variables.length} variables`));
 
   if (model.ok) {
+    toolbarEl.append(renderFinder());
     const controls = el('div', 'view-controls');
     controls.append(iconButton('+', 'Zoom in', () => viewport?.zoomIn()));
     controls.append(iconButton('−', 'Zoom out', () => viewport?.zoomOut()));
@@ -200,6 +263,41 @@ function rebuildToolbar(): void {
     clear.addEventListener('click', () => selectVariable(undefined));
     toolbarEl.append(clear);
   }
+}
+
+function renderFinder(): HTMLElement {
+  const wrap = el('div', 'finder');
+  const input = el('input', 'finder-input') as HTMLInputElement;
+  input.type = 'search';
+  input.placeholder = 'Find state / type / function…';
+  input.value = finderQuery;
+  input.setAttribute('aria-label', 'Find state, type, or function');
+  input.addEventListener('input', () => {
+    finderQuery = input.value;
+    finderIndex = 0;
+    recomputeFinder();
+    if (finderMatches.length) {
+      centerCurrentMatch();
+    }
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      gotoMatch(e.shiftKey ? -1 : 1);
+    } else if (e.key === 'Escape') {
+      finderQuery = '';
+      input.value = '';
+      recomputeFinder();
+    }
+  });
+  wrap.append(input);
+
+  finderCountEl = el('span', 'finder-count');
+  wrap.append(finderCountEl);
+  wrap.append(iconButton('‹', 'Previous match', () => gotoMatch(-1)));
+  wrap.append(iconButton('›', 'Next match', () => gotoMatch(1)));
+  updateFinderCount();
+  return wrap;
 }
 
 // --- sidebar ---

@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.0.4]
+
+### Added
+
+- **Finder:** a search box in the toolbar matches states by name, type, and the
+  Lambda/resource (function) a Task invokes. Matches are outlined; Enter (and the
+  ‹ › buttons) cycle through them, panning the graph to center each match.
+  Invaluable on large machines.
+
 ## [0.0.3]
 
 ### Changed

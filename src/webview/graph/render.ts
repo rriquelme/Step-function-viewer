@@ -125,6 +125,18 @@ export function applyHighlight(nodeEls: Map<string, SVGGElement>, state: Highlig
   }
 }
 
+/** Mark finder matches; `currentId` gets the focused style. Empty set clears. */
+export function applyMatches(
+  nodeEls: Map<string, SVGGElement>,
+  matches: Set<string>,
+  currentId: string | undefined,
+): void {
+  for (const [id, g] of nodeEls) {
+    g.classList.toggle('match', matches.has(id));
+    g.classList.toggle('match-current', id === currentId);
+  }
+}
+
 function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   const x = node.x - node.width / 2;
   const y = node.y - node.height / 2;

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { layoutGraph } from '../../src/webview/graph/layout';
 import {
   applyHighlight,
+  applyMatches,
   createCanvas,
   renderInto,
   updateDataFlow,
@@ -101,6 +102,18 @@ describe('render', () => {
     expect(a.getAttribute('role')).toBe('button');
     expect(a.getAttribute('aria-label')).toContain('A');
     expect(a.querySelector('title')?.textContent).toContain('A');
+  });
+
+  it('applyMatches toggles match and match-current classes', () => {
+    const { nodeEls } = renderGraph();
+    applyMatches(nodeEls, new Set(['A', 'B']), 'B');
+    expect(nodeEls.get('A')!.classList.contains('match')).toBe(true);
+    expect(nodeEls.get('B')!.classList.contains('match-current')).toBe(true);
+    expect(nodeEls.get('P')!.classList.contains('match')).toBe(false);
+
+    applyMatches(nodeEls, new Set(), undefined);
+    expect(nodeEls.get('A')!.classList.contains('match')).toBe(false);
+    expect(nodeEls.get('B')!.classList.contains('match-current')).toBe(false);
   });
 
   it('updateDataFlow draws one edge per definition/reference pair and clears', () => {

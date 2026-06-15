@@ -26,6 +26,10 @@ export interface GraphNode {
   parentId?: string;
   /** True for Parallel/Map states that contain sub-graphs. */
   container: boolean;
+  /** Task `Resource` (e.g. the integration ARN), for search. */
+  resource?: string;
+  /** Invoked function name (from Arguments/Parameters FunctionName), for search. */
+  functionName?: string;
 }
 
 export interface GraphEdge {
@@ -54,6 +58,21 @@ function makeId(prefix: string, name: string): string {
   return prefix ? `${prefix}${name}` : name;
 }
 
+/** Best-effort invoked function name from a Task's Arguments (JSONata) or Parameters (JSONPath). */
+function extractFunctionName(state: State): string | undefined {
+  const args = (state as { Arguments?: unknown }).Arguments;
+  const params = (state as { Parameters?: unknown }).Parameters;
+  for (const source of [args, params]) {
+    if (source && typeof source === 'object') {
+      const fn = (source as Record<string, unknown>).FunctionName;
+      if (typeof fn === 'string') {
+        return fn;
+      }
+    }
+  }
+  return undefined;
+}
+
 export function buildGraph(machine: StateMachine | undefined, rangeAt: RangeResolver): Graph {
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
@@ -79,6 +98,8 @@ export function buildGraph(machine: StateMachine | undefined, rangeAt: RangeReso
         range: rangeAt(jsonPath),
         parentId: ctx.parentId,
         container: isContainer,
+        resource: state.Type === 'Task' ? (state as TaskState).Resource : undefined,
+        functionName: extractFunctionName(state),
       });
 
       collectTransitions(ctx, id, name, state, edges);

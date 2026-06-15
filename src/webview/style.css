@@ -91,6 +91,31 @@ body {
   padding-left: 16px;
 }
 
+.finder {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.finder-input {
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--vscode-input-foreground);
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  padding: 3px 8px;
+  min-width: 200px;
+}
+.finder-input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+}
+.finder-count {
+  font-size: 0.8em;
+  opacity: 0.75;
+  min-width: 34px;
+  text-align: center;
+}
+
 .view-controls {
   display: inline-flex;
   gap: 4px;
@@ -195,6 +220,21 @@ body {
 }
 .node.dimmed {
   opacity: 0.25;
+}
+
+/* Finder matches (override variable-highlight strokes while searching). */
+.node.match {
+  opacity: 1;
+}
+.node.match .node-box,
+.node.match .end-ball {
+  stroke: var(--vscode-charts-yellow, #d7a000);
+  stroke-width: 3px;
+}
+.node.match-current .node-box,
+.node.match-current .end-ball {
+  stroke: var(--vscode-focusBorder, #e8a33d);
+  stroke-width: 4px;
 }
 
 /* --- edges --- */

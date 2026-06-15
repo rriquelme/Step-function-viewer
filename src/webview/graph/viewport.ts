@@ -61,6 +61,14 @@ export class Viewport {
     this.apply();
   }
 
+  /** Pan so that the given graph-space point is centered (keeps current zoom). */
+  centerOn(x: number, y: number): void {
+    const rect = this.svg.getBoundingClientRect();
+    this.tx = rect.width / 2 - x * this.scale;
+    this.ty = rect.height / 2 - y * this.scale;
+    this.apply();
+  }
+
   zoomIn(): void {
     this.zoomAround(ZOOM_STEP, this.centerPoint());
   }

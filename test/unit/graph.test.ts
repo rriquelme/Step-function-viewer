@@ -70,4 +70,23 @@ describe('buildGraph', () => {
     expect(a?.range).toBeDefined();
     expect(a!.range!.end).toBeGreaterThan(a!.range!.start);
   });
+
+  it('captures Task resource and invoked function name (for the finder)', () => {
+    const doc = JSON.stringify({
+      QueryLanguage: 'JSONata',
+      StartAt: 'Invoke',
+      States: {
+        Invoke: {
+          Type: 'Task',
+          Resource: 'arn:aws:states:::lambda:invoke',
+          Arguments: { FunctionName: 'enrichRecord' },
+          End: true,
+        },
+      },
+    });
+    const { machine, rangeAt } = parseDocument(doc);
+    const node = buildGraph(machine, rangeAt).nodes.find((n) => n.id === 'Invoke')!;
+    expect(node.resource).toBe('arn:aws:states:::lambda:invoke');
+    expect(node.functionName).toBe('enrichRecord');
+  });
 });
