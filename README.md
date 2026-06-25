@@ -98,8 +98,25 @@ command).
 - `src/model/viewModel.ts` — the serializable model handed to the webview.
 - `src/shared/protocol.ts` — typed messages between extension host and webview.
 - `src/editor/` — the `CustomTextEditorProvider` and webview HTML/CSP.
-- `src/webview/` — the webview UI (placeholder list today; SVG graph in Phase 4).
+- `src/webview/` — the webview UI: SVG graph (`graph/`), variable sidebar, finder.
+
+## Privacy
+
+All processing happens **locally** on your machine. This extension has **no
+telemetry, no analytics, and makes no network requests**. It only reads the
+content of the file you open in the editor — it does not read other files, write
+to disk, run external programs, or send any data anywhere. Nothing you open or
+view leaves your computer.
+
+## Disclaimer & terms
+
+This software is provided **"AS IS", without warranty of any kind**, and you use
+it **at your own risk**; the author and contributors are **not liable** for any
+damages or other liability arising from its use. It is an **independent,
+unofficial** tool and is **not affiliated with or endorsed by Amazon Web
+Services**. See [DISCLAIMER.md](DISCLAIMER.md) for the full terms.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The MIT warranty disclaimer and limitation of
+liability govern your use of this software.

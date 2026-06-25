@@ -3,6 +3,21 @@
 All notable changes to the Step Function Viewer extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.0]
+
+### Added
+
+- **Terms / disclaimer & privacy statement** ([DISCLAIMER.md](DISCLAIMER.md) and
+  README): the software is provided "as is" with no warranty and no liability;
+  it is an independent, unofficial tool not affiliated with AWS. Documented that
+  the extension is fully local — no telemetry, no analytics, no network requests.
+
+### Changed
+
+- Publish-readiness hardening: source maps are no longer shipped in the packaged
+  extension, and the webview CSP `img-src` was tightened (dropped `https:`, since
+  no remote images are ever loaded).
+
 ## [0.0.9]
 
 ### Added

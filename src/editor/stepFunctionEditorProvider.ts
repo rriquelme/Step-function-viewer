@@ -146,7 +146,7 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
       `default-src 'none'`,
       `style-src ${webview.cspSource}`,
       `script-src 'nonce-${nonce}'`,
-      `img-src ${webview.cspSource} https: data:`,
+      `img-src ${webview.cspSource} data:`,
       `font-src ${webview.cspSource}`,
     ].join('; ');
 
