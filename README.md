@@ -1,122 +1,77 @@
 # Step Function Viewer Light
 
-A VS Code extension that renders AWS Step Functions (Amazon States Language,
-**JSONata** query language) as an interactive view. Its differentiator: clicking
-a state will list every **variable** created or used by that state, and clicking
-a variable will **highlight every other state** where it is assigned or
-referenced — a data-flow lens over your state machine.
+**See your AWS Step Functions as an interactive graph — and follow your data.**
 
-> Status: early development. See [`plans/01-project-plan.md`](plans/01-project-plan.md)
-> for the full roadmap. Phases 0–4 are implemented (interactive graph + variable
-> inspector); packaging/docs (Phases 6–7) are next.
+A lightweight, fully-local VS Code viewer for AWS Step Functions state machines
+(Amazon States Language, **JSONata**). Open an `.asl.json` or `.asl.yaml` file
+and get an interactive diagram with a feature the usual viewers don't have: a
+**variable data-flow lens**. Click a state to see every variable it creates and
+uses; click a variable to **light up every other state** that assigns or reads
+it. No account, no sign-in, no network — it all runs on your machine.
 
-## Features (current)
+## Usage
 
-- Custom editor for `*.asl.json` / `*.asl` and `*.asl.yaml` / `*.asl.yml` files
-  with an **interactive SVG graph** (dagre layout, pan / zoom / fit,
-  per-state-type nodes, labeled edges for Choice / Default / Catch, and
-  `branch` / `map` edges into nested states). Click-to-source works for both
-  JSON and YAML.
-- **Variable inspector (the differentiator):** click a state to see the
-  variables it *creates* and *uses*; click a variable to **highlight every
-  state** that defines it (green) or references it (blue) and dim the rest.
-- Parses nested **Parallel** branches and **Map** item processors with true
-  nested layout: each draws a labelled **scope box** around exactly its own
-  states (purple for Parallel, teal for Map). Terminal **Succeed**/**Fail**
-  states render as small end balls (green ✓ / red ✕).
-- Task nodes show their integration inline (e.g. `TASK · lambda:invoke`); the
-  full resource ARN is in the hover tooltip.
-- Detects the effective **QueryLanguage** (JSONata vs JSONPath).
-- Structural diagnostics in the Problems panel: missing `StartAt`, dangling
-  transitions, unreachable states, states with neither `Next` nor `End`.
-- Click-to-source: reveal any state's JSON in the document (node double-click or
-  the sidebar "source" button).
-- **Finder:** search the graph by state name, type, or invoked function/resource,
-  or prefix with `$` (e.g. `$orderId`) to find a variable's usages; cycle through
-  matches (Enter / ‹ ›) with the graph panning to each.
+Open an Amazon States Language file (`*.asl.json`, `*.asl`, `*.asl.yaml`, or
+`*.asl.yml`), then either:
 
-## Settings
+- right-click the file → **Open With… → Step Function Viewer Light**, or
+- run **“Open Step Function Viewer Light”** from the Command Palette
+  (<kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>).
 
-| Setting | Default | Description |
-| --- | --- | --- |
-| `stepFunctionViewer.layoutDirection` | `TB` | Graph layout direction: top-to-bottom (`TB`) or left-to-right (`LR`). |
-| `stepFunctionViewer.autoOpen` | `false` | Automatically open the viewer when an ASL file is activated. |
+## Highlights
+
+- 🔎 **Variable data-flow lens (the differentiator).** Click a state to list the
+  variables it *creates* and *uses*. Click a variable to highlight every state
+  that **defines** it (green) and **references** it (blue), dim the rest, and
+  draw data-flow arrows between them.
+- 🗺️ **Interactive graph.** Automatic layered layout with pan, zoom, and
+  fit-to-screen. Nodes are styled per state type; edges are labeled for
+  Choice / Default / Catch.
+- 📦 **Clear nesting.** **Parallel** branches and **Map** item processors are
+  drawn inside labelled **scope boxes** (purple for Parallel, teal for Map), so
+  you can tell exactly what belongs to each. Terminal **Succeed** / **Fail**
+  states show as small end balls (green ✓ / red ✕).
+- ⚡ **Task integrations at a glance.** Task nodes show what they call inline,
+  e.g. `TASK · lambda:invoke`, with the full resource ARN on hover.
+- 🔁 **Map iteration aware.** The current item (`$states.context.Map.Item.*`) is
+  surfaced as a `<Map>.item` variable so you can see how iteration data flows.
+- 🧭 **Finder.** Search the graph by state name, type, or invoked
+  function/resource — or prefix with `$` (e.g. `$orderId`) to jump through a
+  variable’s usages. <kbd>Enter</kbd> / ‹ › cycle and pan to each match.
+- 🔗 **Click-to-source.** Jump from any state — or any exact variable usage — to
+  its place in the document.
+- ✅ **Inline diagnostics.** Missing `StartAt`, dangling transitions, unreachable
+  states, and states with neither `Next` nor `End` are reported in the Problems
+  panel.
+- 🌓 Matches your VS Code theme (light / dark / high-contrast).
 
 ## Supported ASL
 
-- State types: `Task`, `Choice`, `Parallel`, `Map`, `Pass`, `Wait`, `Succeed`,
-  `Fail`.
-- Transitions: `Next`, `End`, Choice `Choices`/`Default`, `Catch`, and entry
-  into `Parallel` branches and `Map` item processors (`ItemProcessor` /
-  `Iterator`).
-- Query language: **JSONata** is the target for variable analysis. JSONPath
-  machines render but report no user variables.
-- File formats: **JSON** (`*.asl.json`, `*.asl`) and **YAML** (`*.asl.yaml`,
-  `*.asl.yml`), e.g. a state machine exported as YAML from Workflow Studio.
-
-## Examples
-
-The [`examples/`](examples/) folder contains state machines for trying the
-viewer:
-
-- `order-processing.asl.json` — Parallel + Map + Choice with shared variables.
-- `order-processing.asl.yaml` — the same workflow in YAML.
-- `retry-catch.asl.json` — Retry/Catch with variables assigned on the error path.
-- `choice-routing.asl.json` — Choice routing driven by assigned variables.
-- `diagnostics-demo.asl.json` — dangling transition + unreachable state.
-- `jsonpath-legacy.asl.json` — a JSONPath machine (renders, no variables).
-- `variables-in-scopes.asl.yaml` — variables created inside a Map/Parallel and
-  delivered as lists to later states.
-- `map-output-usage.asl.yaml` — one Map's output consumed by several downstream
-  states (whole list, by index, aggregated, filtered).
-- `map-iteration.asl.yaml` — Map iteration internals: the item context
-  (`$states.context.Map.Item.*`), iteration-local variables, and an outer
-  variable used inside the processor.
-- `large-pipeline.asl.json` — a 50+ state machine for stress-testing
-  navigation (generated by `scripts/make-large-example.mjs`).
-
-## Getting started (development)
-
-```bash
-npm install
-npm run build      # bundle extension + webview into out/
-npm run watch      # rebuild on change (used by F5)
-npm test           # unit tests (vitest)
-npm run lint       # eslint
-npm run typecheck  # tsc --noEmit
-```
-
-Press <kbd>F5</kbd> in VS Code to launch the Extension Development Host, then
-open `examples/order-processing.asl.json` with the **Step Function Viewer Light**
-editor (right-click → *Open With…*, or run the *Open Step Function Viewer Light*
-command).
-
-## Architecture
-
-- `src/asl/` — vscode-free ASL parsing (`parser.ts`), graph model (`graph.ts`),
-  validation (`validate.ts`), and query-language resolution. Unit-tested.
-- `src/model/viewModel.ts` — the serializable model handed to the webview.
-- `src/shared/protocol.ts` — typed messages between extension host and webview.
-- `src/editor/` — the `CustomTextEditorProvider` and webview HTML/CSP.
-- `src/webview/` — the webview UI: SVG graph (`graph/`), variable sidebar, finder.
+- **State types:** `Task`, `Choice`, `Parallel`, `Map`, `Pass`, `Wait`,
+  `Succeed`, `Fail`.
+- **Transitions:** `Next`, `End`, Choice `Choices` / `Default`, `Catch`, and
+  entry into `Parallel` branches and `Map` item processors
+  (`ItemProcessor` / `Iterator`).
+- **Query language:** **JSONata** is the target for variable analysis. JSONPath
+  machines still render, but report no user variables.
+- **Formats:** **JSON** (`*.asl.json`, `*.asl`) and **YAML** (`*.asl.yaml`,
+  `*.asl.yml`) — e.g. a state machine exported as YAML from Workflow Studio.
 
 ## Privacy
 
-All processing happens **locally** on your machine. This extension has **no
-telemetry, no analytics, and makes no network requests**. It only reads the
-content of the file you open in the editor — it does not read other files, write
-to disk, run external programs, or send any data anywhere. Nothing you open or
-view leaves your computer.
+Everything runs **locally**. This extension has **no telemetry, no analytics,
+and makes no network requests**. It only reads the content of the file you open
+— it does not read other files, write to disk, run external programs, or send
+any data anywhere. Nothing you open or view leaves your computer.
 
 ## Disclaimer & terms
 
-This software is provided **"AS IS", without warranty of any kind**, and you use
-it **at your own risk**; the author and contributors are **not liable** for any
-damages or other liability arising from its use. It is an **independent,
-unofficial** tool and is **not affiliated with or endorsed by Amazon Web
-Services**. See [DISCLAIMER.md](DISCLAIMER.md) for the full terms.
+Provided **“AS IS”, without warranty of any kind**, and used **at your own
+risk**; the author and contributors are **not liable** for any damages or other
+liability arising from its use. This is an **independent, unofficial** tool and
+is **not affiliated with or endorsed by Amazon Web Services**. See
+[DISCLAIMER.md](DISCLAIMER.md) for the full terms.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The MIT warranty disclaimer and limitation of
-liability govern your use of this software.
+MIT — see [LICENSE](LICENSE).

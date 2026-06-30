@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.3]
+
+### Changed
+
+- Rewrote the README as a concise, user-facing Marketplace page (highlights,
+  usage, supported ASL, privacy, terms); removed the developer-oriented
+  Settings, Examples, Getting Started, and Architecture sections.
+
 ## [0.1.2]
 
 ### Changed
