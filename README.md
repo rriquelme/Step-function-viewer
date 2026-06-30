@@ -1,4 +1,4 @@
-# Step Function Viewer
+# Step Function Viewer Light
 
 A VS Code extension that renders AWS Step Functions (Amazon States Language,
 **JSONata** query language) as an interactive view. Its differentiator: clicking
@@ -87,8 +87,8 @@ npm run typecheck  # tsc --noEmit
 ```
 
 Press <kbd>F5</kbd> in VS Code to launch the Extension Development Host, then
-open `examples/order-processing.asl.json` with the **Step Function Viewer**
-editor (right-click → *Open With…*, or run the *Open Step Function Viewer*
+open `examples/order-processing.asl.json` with the **Step Function Viewer Light**
+editor (right-click → *Open With…*, or run the *Open Step Function Viewer Light*
 command).
 
 ## Architecture

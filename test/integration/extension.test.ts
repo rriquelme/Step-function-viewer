@@ -26,7 +26,7 @@ describe('Step Function Viewer extension', () => {
   before(async () => {
     // The extension activates lazily (custom editor / command). Force activation
     // so the diagnostics listener is registered before we open documents.
-    const ext = vscode.extensions.getExtension('step-function-viewer.step-function-viewer');
+    const ext = vscode.extensions.getExtension('step-function-viewer.step-function-viewer-light');
     await ext?.activate();
   });
 
@@ -39,7 +39,7 @@ describe('Step Function Viewer extension', () => {
   });
 
   it('contributes the custom editor', () => {
-    const ext = vscode.extensions.getExtension('step-function-viewer.step-function-viewer');
+    const ext = vscode.extensions.getExtension('step-function-viewer.step-function-viewer-light');
     assert.ok(ext, 'extension should be discoverable');
     const editors = ext!.packageJSON.contributes.customEditors;
     assert.ok(

@@ -1,6 +1,6 @@
 {
-  "name": "step-function-viewer",
-  "displayName": "Step Function Viewer",
+  "name": "step-function-viewer-light",
+  "displayName": "Step Function Viewer Light",
   "description": "Interactive viewer for AWS Step Functions (JSONata) with per-state variable inspection and cross-state variable highlighting.",
   "version": "0.0.9",
   "publisher": "step-function-viewer",
@@ -39,7 +39,7 @@
     "customEditors": [
       {
         "viewType": "stepFunctionViewer.editor",
-        "displayName": "Step Function Viewer",
+        "displayName": "Step Function Viewer Light",
         "selector": [
           {
             "filenamePattern": "*.asl.json"
@@ -60,7 +60,7 @@
     "commands": [
       {
         "command": "stepFunctionViewer.open",
-        "title": "Open Step Function Viewer",
+        "title": "Open Step Function Viewer Light",
         "category": "Step Functions"
       }
     ],
@@ -80,7 +80,7 @@
       ]
     },
     "configuration": {
-      "title": "Step Function Viewer",
+      "title": "Step Function Viewer Light",
       "properties": {
         "stepFunctionViewer.layoutDirection": {
           "type": "string",

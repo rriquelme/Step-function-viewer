@@ -1,4 +1,4 @@
-// Build script for the Step Function Viewer extension.
+// Build script for the Step Function Viewer Light extension.
 // Produces two bundles:
 //   out/extension.js  -> extension host code (Node, `vscode` external)
 //   out/webview.js     -> webview UI code (browser), plus out/webview.css

@@ -27,7 +27,7 @@ export function registerDiagnostics(): vscode.Disposable {
           ? vscode.DiagnosticSeverity.Error
           : vscode.DiagnosticSeverity.Warning;
       const diag = new vscode.Diagnostic(range, d.message, severity);
-      diag.source = 'Step Function Viewer';
+      diag.source = 'Step Function Viewer Light';
       return diag;
     });
     collection.set(document.uri, diagnostics);

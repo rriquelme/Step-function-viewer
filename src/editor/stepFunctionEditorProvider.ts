@@ -157,7 +157,7 @@ export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvid
   <meta http-equiv="Content-Security-Policy" content="${csp}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="${styleUri}" rel="stylesheet" />
-  <title>Step Function Viewer</title>
+  <title>Step Function Viewer Light</title>
 </head>
 <body>
   <div id="app"></div>

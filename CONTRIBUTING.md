@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in improving the Step Function Viewer!
+Thanks for your interest in improving the Step Function Viewer Light!
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ npm run watch   # rebuilds out/ on change
 ```
 
 Press <kbd>F5</kbd> to launch the Extension Development Host, then open one of
-the files in `examples/` with the **Step Function Viewer** editor.
+the files in `examples/` with the **Step Function Viewer Light** editor.
 
 ## Checks
 

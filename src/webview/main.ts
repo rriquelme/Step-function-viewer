@@ -240,7 +240,7 @@ function rebuildToolbar(): void {
 
   // 1. Title stacked on three lines to save horizontal space.
   const title = el('div', 'title');
-  for (const word of ['Step', 'Function', 'Viewer']) {
+  for (const word of ['Step', 'Function', 'Viewer', 'Light']) {
     title.append(span(word, 'title-line'));
   }
   toolbarEl.append(title);

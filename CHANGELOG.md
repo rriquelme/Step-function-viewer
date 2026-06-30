@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to the Step Function Viewer extension are documented here.
+All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
+
+### Changed
+
+- **Renamed to "Step Function Viewer Light"** (extension id
+  `step-function-viewer-light`). Command, view, and setting identifiers are
+  unchanged, so existing settings keep working.
 
 ### Added
 
