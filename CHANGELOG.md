@@ -3,6 +3,13 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2]
+
+### Changed
+
+- Set the Marketplace **publisher** to `RobertoRiquelmeSaez` so the extension can
+  be published (the manifest previously used a placeholder publisher id).
+
 ## [0.1.1]
 
 ### Changed
