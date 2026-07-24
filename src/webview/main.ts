@@ -196,7 +196,7 @@ function mountGraph(container: HTMLElement): void {
     return;
   }
   const { nodes, edges } = toLayoutInputs(model);
-  const hash = structureHash(nodes, edges, options.layoutDirection);
+  const hash = structureHash(nodes, edges, options.layoutDirection, model.startAt);
 
   const canvas = createCanvas();
   svg = canvas.svg;
@@ -208,7 +208,7 @@ function mountGraph(container: HTMLElement): void {
   // Reuse the previous layout when the structure is unchanged (e.g. an edit
   // that only touched expressions), otherwise recompute it.
   if (!lastLayout || hash !== lastHash) {
-    lastLayout = layoutGraph(nodes, edges, options.layoutDirection);
+    lastLayout = layoutGraph(nodes, edges, options.layoutDirection, model.startAt);
     lastHash = hash;
   }
 

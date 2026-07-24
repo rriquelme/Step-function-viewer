@@ -27,6 +27,29 @@ describe('nodeWidth', () => {
   });
 });
 
+describe('StartAt stays on top', () => {
+  const loopNodes: LayoutInputNode[] = [
+    { id: 'Start', name: 'Start', type: 'Task', container: false },
+    { id: 'Work', name: 'Work', type: 'Task', container: false },
+    { id: 'Retry', name: 'Retry', type: 'Choice', container: false },
+  ];
+  // A back-edge from Retry to Start would normally push Start below it.
+  const loopEdges: LayoutInputEdge[] = [
+    { from: 'Start', to: 'Work', kind: 'next' },
+    { from: 'Work', to: 'Retry', kind: 'next' },
+    { from: 'Retry', to: 'Start', kind: 'choice' },
+  ];
+
+  it('keeps the entry state above the states that loop back to it', () => {
+    const laid = layoutGraph(loopNodes, loopEdges, 'TB', 'Start');
+    const y = (id: string) => laid.nodes.find((n) => n.id === id)!.y;
+    expect(y('Start')).toBeLessThan(y('Work'));
+    expect(y('Start')).toBeLessThan(y('Retry'));
+    // The back-edge is still drawn.
+    expect(laid.edges.some((e) => e.from === 'Retry' && e.to === 'Start')).toBe(true);
+  });
+});
+
 describe('layoutGraph', () => {
   it('positions every node and routes every edge with points', () => {
     const laid = layoutGraph(nodes, edges, 'TB');

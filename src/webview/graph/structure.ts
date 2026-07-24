@@ -7,8 +7,9 @@ export function structureHash(
   nodes: LayoutInputNode[],
   edges: LayoutInputEdge[],
   rankdir: Rankdir,
+  startAt?: string,
 ): string {
   const n = nodes.map((x) => `${x.id}:${x.type}:${x.parentId ?? ''}`).join('|');
   const e = edges.map((x) => `${x.from}>${x.to}:${x.kind}`).join('|');
-  return `${rankdir}#${n}#${e}`;
+  return `${rankdir}#${startAt ?? ''}#${n}#${e}`;
 }

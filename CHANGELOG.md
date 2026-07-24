@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.4]
+
+### Fixed
+
+- The **entry (StartAt) state now always stays at the top** of the diagram.
+  Transitions that loop back into the start state no longer push it down —
+  those edges are excluded from vertical ranking (but still drawn).
+
 ## [0.1.3]
 
 ### Changed

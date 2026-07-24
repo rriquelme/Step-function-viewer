@@ -103,6 +103,7 @@ export function layoutGraph(
   nodes: LayoutInputNode[],
   edges: LayoutInputEdge[],
   rankdir: Rankdir = 'TB',
+  startAt?: string,
 ): LaidOutGraph {
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const childrenByParent = new Map<string, LayoutInputNode[]>();
@@ -114,6 +115,11 @@ export function layoutGraph(
     const p = nodeById.get(id)?.parentId;
     return p && nodeById.has(p) ? p : ROOT;
   };
+
+  // Edges that transition BACK into the entry state are excluded from ranking so
+  // the StartAt state always stays at the top; they are still drawn (as straight
+  // connectors) below.
+  const backToStart = new Set<number>();
 
   const layoutScope = (scopeKey: string): SubLayout => {
     const members = childrenByParent.get(scopeKey) ?? [];
@@ -137,14 +143,19 @@ export function layoutGraph(
 
     const ids = new Set(members.map((m) => m.id));
     edges.forEach((edge, i) => {
-      if (ids.has(edge.from) && ids.has(edge.to)) {
-        const label: dagre.Label = {};
-        if (edge.label) {
-          label.width = Math.min(160, edge.label.length * 6 + 8);
-          label.height = 14;
-        }
-        g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
+      if (!ids.has(edge.from) || !ids.has(edge.to)) {
+        return;
       }
+      if (scopeKey === ROOT && startAt && edge.to === startAt) {
+        backToStart.add(i);
+        return;
+      }
+      const label: dagre.Label = {};
+      if (edge.label) {
+        label.width = Math.min(160, edge.label.length * 6 + 8);
+        label.height = 14;
+      }
+      g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
     });
 
     dagre.layout(g);
@@ -203,22 +214,24 @@ export function layoutGraph(
   const root = layoutScope(ROOT);
   place(root, ROOT_MARGIN, ROOT_MARGIN);
 
-  // Cross-scope edges aren't routed by any single dagre pass. `branch`/`map`
-  // entry edges are implied by containment, so we drop them; any other crossing
-  // edge (e.g. a Catch escaping a branch) is drawn as a straight connector.
-  for (const edge of edges) {
-    if (scopeKeyOf(edge.from) === scopeKeyOf(edge.to)) {
-      continue;
+  // Draw edges not routed by a single dagre pass as straight connectors:
+  //  - cross-scope edges (e.g. a Catch escaping a branch), and
+  //  - back-to-start edges we excluded from ranking to keep StartAt on top.
+  // `branch`/`map` entry edges are implied by containment, so we drop them.
+  edges.forEach((edge, i) => {
+    const crossScope = scopeKeyOf(edge.from) !== scopeKeyOf(edge.to);
+    if (!crossScope && !backToStart.has(i)) {
+      return;
     }
     if (edge.kind === 'branch' || edge.kind === 'map') {
-      continue;
+      return;
     }
     const a = centers.get(edge.from);
     const b = centers.get(edge.to);
     if (a && b) {
       laidOutEdges.push({ from: edge.from, to: edge.to, kind: edge.kind, label: edge.label, points: [a, b] });
     }
-  }
+  });
 
   return {
     nodes: laidOutNodes,
