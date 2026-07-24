@@ -61,8 +61,14 @@ const MAX_WIDTH = 300;
 const ROOT_MARGIN = 24;
 const SCOPE_PAD = 18; // padding between a container box and its contents
 const HEADER_H = 26; // top strip of a container box reserved for its label
+const PSEUDO_W = 68;
+const PSEUDO_H = 34;
 
 const ROOT = '__root__';
+
+/** Ids of the synthetic Start/End markers (AWS-console style). */
+export const START_ID = '__start__';
+export const END_ID = '__end__';
 
 export function nodeWidth(name: string): number {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(name.length * CHAR_WIDTH) + 36));
@@ -73,6 +79,9 @@ function isTerminal(type: string): boolean {
 }
 
 function leafSize(node: LayoutInputNode): { width: number; height: number } {
+  if (node.type === 'Start' || node.type === 'End') {
+    return { width: PSEUDO_W, height: PSEUDO_H };
+  }
   if (isTerminal(node.type)) {
     return { width: Math.max(TERMINAL_W, node.name.length * CHAR_WIDTH), height: TERMINAL_H };
   }
@@ -94,16 +103,62 @@ interface SubLayout {
 }
 
 /**
+ * Adds AWS-console-style Start/End markers to the root scope: Start feeds the
+ * StartAt state (pinning it to the top of the layout even when loops/catches
+ * would otherwise pull it down), and every root state with no onward flow feeds
+ * End (pinning the machine's exits to the bottom).
+ */
+function withStartEnd(
+  nodes: LayoutInputNode[],
+  edges: LayoutInputEdge[],
+  startAt: string,
+): { nodes: LayoutInputNode[]; edges: LayoutInputEdge[] } {
+  const ids = new Set(nodes.map((n) => n.id));
+  const atRoot = (n: LayoutInputNode) => !n.parentId || !ids.has(n.parentId);
+  if (!ids.has(startAt) || ids.has(START_ID) || ids.has(END_ID)) {
+    return { nodes, edges };
+  }
+  const augNodes = [...nodes];
+  const augEdges = [...edges];
+
+  augNodes.push({ id: START_ID, name: 'Start', type: 'Start', container: false });
+  augEdges.push({ from: START_ID, to: startAt, kind: 'next' });
+
+  // A root state ends the machine when it has no onward control flow (Succeed,
+  // Fail, or `End: true`) — catch edges alone don't count, they're error paths.
+  const hasFlowOut = new Set(
+    edges
+      .filter((e) => e.kind === 'next' || e.kind === 'choice' || e.kind === 'default')
+      .map((e) => e.from),
+  );
+  const terminals = nodes.filter((n) => atRoot(n) && !hasFlowOut.has(n.id));
+  if (terminals.length > 0) {
+    augNodes.push({ id: END_ID, name: 'End', type: 'End', container: false });
+    for (const t of terminals) {
+      augEdges.push({ from: t.id, to: END_ID, kind: 'next' });
+    }
+  }
+  return { nodes: augNodes, edges: augEdges };
+}
+
+/**
  * Lays out the machine with true nesting: each Parallel/Map sub-graph is laid
  * out in isolation and inserted into its parent as a single block sized to fit
  * its contents. This guarantees a container's box encloses exactly its own
  * states — siblings (e.g. a Map's `Next` successor) land outside the box.
+ *
+ * When `startAt` is given, synthetic Start/End markers are added so the entry
+ * state always sits at the top and the machine's exits at the bottom.
  */
 export function layoutGraph(
-  nodes: LayoutInputNode[],
-  edges: LayoutInputEdge[],
+  inputNodes: LayoutInputNode[],
+  inputEdges: LayoutInputEdge[],
   rankdir: Rankdir = 'TB',
+  startAt?: string,
 ): LaidOutGraph {
+  const { nodes, edges } = startAt
+    ? withStartEnd(inputNodes, inputEdges, startAt)
+    : { nodes: inputNodes, edges: inputEdges };
   const nodeById = new Map(nodes.map((n) => [n.id, n]));
   const childrenByParent = new Map<string, LayoutInputNode[]>();
   for (const n of nodes) {

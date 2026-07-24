@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  END_ID,
   type LayoutInputEdge,
   type LayoutInputNode,
   layoutGraph,
   nodeWidth,
+  START_ID,
 } from '../../src/webview/graph/layout';
 import { structureHash } from '../../src/webview/graph/structure';
 import { readFileSync } from 'node:fs';
@@ -46,6 +48,64 @@ describe('layoutGraph', () => {
   it('skips dangling edges to unknown targets', () => {
     const laid = layoutGraph(nodes, [{ from: 'A', to: 'Missing', kind: 'next' }], 'TB');
     expect(laid.edges).toHaveLength(0);
+  });
+
+  it('adds no Start/End markers when startAt is not given', () => {
+    const laid = layoutGraph(nodes, edges, 'TB');
+    expect(laid.nodes.some((n) => n.id === START_ID || n.id === END_ID)).toBe(false);
+  });
+
+  it('pins Start above the entry state and End below the exits', () => {
+    const laid = layoutGraph(nodes, edges, 'TB', 'A');
+    const start = laid.nodes.find((n) => n.id === START_ID)!;
+    const end = laid.nodes.find((n) => n.id === END_ID)!;
+    const a = laid.nodes.find((n) => n.id === 'A')!;
+    const c = laid.nodes.find((n) => n.id === 'C')!;
+    expect(start.y).toBeLessThan(a.y);
+    expect(end.y).toBeGreaterThan(c.y);
+    expect(laid.edges.some((e) => e.from === START_ID && e.to === 'A')).toBe(true);
+    expect(laid.edges.some((e) => e.from === 'C' && e.to === END_ID)).toBe(true);
+  });
+
+  it('keeps the entry state at the top even when a loop points back to it', () => {
+    // Without the Start anchor, dagre's cycle-breaking can rank the entry
+    // state below its successors when a Catch/Choice loops back to it.
+    const loopNodes: LayoutInputNode[] = [
+      { id: 'First', name: 'First', type: 'Task', container: false },
+      { id: 'Retry', name: 'Retry', type: 'Task', container: false },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+    ];
+    const loopEdges: LayoutInputEdge[] = [
+      { from: 'First', to: 'Retry', kind: 'next' },
+      { from: 'Retry', to: 'First', kind: 'catch' },
+      { from: 'Retry', to: 'Done', kind: 'next' },
+    ];
+    const laid = layoutGraph(loopNodes, loopEdges, 'TB', 'First');
+    const start = laid.nodes.find((n) => n.id === START_ID)!;
+    const first = laid.nodes.find((n) => n.id === 'First')!;
+    const end = laid.nodes.find((n) => n.id === END_ID)!;
+    for (const other of laid.nodes.filter((n) => n.id !== START_ID)) {
+      expect(start.y).toBeLessThan(other.y);
+    }
+    expect(first.y).toBeLessThan(laid.nodes.find((n) => n.id === 'Retry')!.y);
+    for (const other of laid.nodes.filter((n) => n.id !== END_ID)) {
+      expect(end.y).toBeGreaterThan(other.y);
+    }
+  });
+
+  it('connects only root-scope exits to End, not states inside containers', () => {
+    const nested: LayoutInputNode[] = [
+      { id: 'M', name: 'M', type: 'Map', container: true },
+      { id: 'M/item/Step', name: 'Step', type: 'Pass', container: false, parentId: 'M' },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+    ];
+    const nestedEdges: LayoutInputEdge[] = [
+      { from: 'M', to: 'M/item/Step', kind: 'map' },
+      { from: 'M', to: 'Done', kind: 'next' },
+    ];
+    const laid = layoutGraph(nested, nestedEdges, 'TB', 'M');
+    const endEdges = laid.edges.filter((e) => e.to === END_ID);
+    expect(endEdges.map((e) => e.from)).toEqual(['Done']);
   });
 
   it('produces different layouts for TB vs LR', () => {
@@ -148,5 +208,9 @@ describe('structureHash', () => {
     expect(changed).not.toBe(a);
 
     expect(structureHash(nodes, edges, 'LR')).not.toBe(a);
+  });
+
+  it('changes when StartAt changes', () => {
+    expect(structureHash(nodes, edges, 'TB', 'A')).not.toBe(structureHash(nodes, edges, 'TB', 'B'));
   });
 });

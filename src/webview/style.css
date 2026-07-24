@@ -221,6 +221,21 @@ body {
   stroke: var(--vscode-focusBorder);
 }
 
+/* Synthetic Start/End markers (AWS-console style pills). */
+.node.pseudo {
+  cursor: default;
+}
+.pseudo-pill {
+  fill: var(--vscode-foreground);
+  stroke: none;
+}
+.pseudo-label {
+  fill: var(--vscode-editor-background);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 /* Accent per state type via the left edge of the box. */
 .node.type-Task .node-box {
   stroke: var(--vscode-charts-blue, #3794ff);

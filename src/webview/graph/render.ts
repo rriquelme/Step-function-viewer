@@ -141,6 +141,9 @@ export function applyMatches(
 function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
   const x = node.x - node.width / 2;
   const y = node.y - node.height / 2;
+  if (node.type === 'Start' || node.type === 'End') {
+    return renderPseudoNode(node, x, y);
+  }
   const terminal = node.type === 'Succeed' || node.type === 'Fail';
   const g = svgEl('g', {
     class: `node type-${node.type}${node.container ? ' container' : ''}${terminal ? ' terminal' : ''}`,
@@ -207,6 +210,34 @@ function renderNode(node: LaidOutNode, handlers: RenderHandlers): SVGGElement {
       handlers.onSelectNode(node.id);
     }
   });
+  return g;
+}
+
+/** Synthetic Start/End markers: a plain pill, not clickable or focusable. */
+function renderPseudoNode(node: LaidOutNode, x: number, y: number): SVGGElement {
+  const g = svgEl('g', {
+    class: `node pseudo pseudo-${node.type.toLowerCase()}`,
+    'data-id': node.id,
+    transform: `translate(${x}, ${y})`,
+    'aria-label': `${node.name} of the state machine`,
+  }) as SVGGElement;
+  g.append(
+    svgEl('rect', {
+      class: 'pseudo-pill',
+      width: String(node.width),
+      height: String(node.height),
+      rx: String(node.height / 2),
+      ry: String(node.height / 2),
+    }),
+  );
+  const label = svgEl('text', {
+    class: 'pseudo-label',
+    x: String(node.width / 2),
+    y: String(node.height / 2 + 4),
+    'text-anchor': 'middle',
+  });
+  label.textContent = node.name;
+  g.append(label);
   return g;
 }
 
