@@ -126,15 +126,23 @@ export function applyHighlight(nodeEls: Map<string, SVGGElement>, state: Highlig
   }
 }
 
-/** Mark finder matches; `currentId` gets the focused style. Empty set clears. */
+/**
+ * Reflect the finder state on the graph: while a query has matches, non-matching
+ * nodes are greyed out (`finder-dim`) so the search narrows visually as you type.
+ * `currentId` (the match centered by Enter / ‹ ›) gets a subtle outline. An empty
+ * match set clears everything.
+ */
 export function applyMatches(
   nodeEls: Map<string, SVGGElement>,
   matches: Set<string>,
   currentId: string | undefined,
 ): void {
+  const active = matches.size > 0;
   for (const [id, g] of nodeEls) {
-    g.classList.toggle('match', matches.has(id));
+    const isMatch = matches.has(id);
+    g.classList.toggle('match', isMatch);
     g.classList.toggle('match-current', id === currentId);
+    g.classList.toggle('finder-dim', active && !isMatch);
   }
 }
 

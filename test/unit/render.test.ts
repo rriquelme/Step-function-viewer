@@ -122,16 +122,20 @@ describe('render', () => {
     expect(a.querySelector('title')?.textContent).toContain('A');
   });
 
-  it('applyMatches toggles match and match-current classes', () => {
+  it('applyMatches greys out non-matches and marks the current match', () => {
     const { nodeEls } = renderGraph();
     applyMatches(nodeEls, new Set(['A', 'B']), 'B');
     expect(nodeEls.get('A')!.classList.contains('match')).toBe(true);
     expect(nodeEls.get('B')!.classList.contains('match-current')).toBe(true);
-    expect(nodeEls.get('P')!.classList.contains('match')).toBe(false);
+    // Non-matching node is dimmed; matches are not.
+    expect(nodeEls.get('P')!.classList.contains('finder-dim')).toBe(true);
+    expect(nodeEls.get('A')!.classList.contains('finder-dim')).toBe(false);
 
+    // Empty query clears everything (nothing dimmed).
     applyMatches(nodeEls, new Set(), undefined);
     expect(nodeEls.get('A')!.classList.contains('match')).toBe(false);
     expect(nodeEls.get('B')!.classList.contains('match-current')).toBe(false);
+    expect(nodeEls.get('P')!.classList.contains('finder-dim')).toBe(false);
   });
 
   it('updateDataFlow draws one edge per definition/reference pair and clears', () => {

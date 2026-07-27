@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.6]
+
+### Changed
+
+- **Finder now greys out non-matching states** instead of outlining matches.
+  As you type (letter by letter), states that don't match fade out so the
+  matches stand out; the state currently centered by Enter / ‹ › keeps a subtle
+  outline. Works for both state and `$variable` searches.
+
 ## [0.1.5]
 
 ### Changed

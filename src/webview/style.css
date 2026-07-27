@@ -247,19 +247,18 @@ body {
   opacity: 0.25;
 }
 
-/* Finder matches (override variable-highlight strokes while searching). */
+/* Finder: matches stay normal, non-matching nodes grey out (letter by letter). */
 .node.match {
   opacity: 1;
 }
-.node.match .node-box,
-.node.match .end-ball {
-  stroke: var(--vscode-charts-yellow, #d7a000);
-  stroke-width: 3px;
+.node.finder-dim {
+  opacity: 0.12;
 }
+/* The match currently centered by Enter / ‹ › keeps a subtle outline. */
 .node.match-current .node-box,
 .node.match-current .end-ball {
   stroke: var(--vscode-focusBorder, #e8a33d);
-  stroke-width: 4px;
+  stroke-width: 3px;
 }
 
 /* --- edges --- */
