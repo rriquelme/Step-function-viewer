@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.5]
+
+### Changed
+
+- The **Variables sidebar now filters live** while you type a `$` query in the
+  finder: e.g. `$s` narrows the list to variables containing `s`, refining with
+  each keystroke. The heading shows the filtered count (e.g. `Variables (3/12)`).
+
 ## [0.1.4]
 
 ### Fixed

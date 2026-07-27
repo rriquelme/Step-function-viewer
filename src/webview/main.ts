@@ -307,6 +307,8 @@ function renderFinder(): HTMLElement {
     finderQuery = input.value;
     finderIndex = 0;
     recomputeFinder();
+    // Live-filter the Variables sidebar list while typing a `$` query.
+    rebuildSidebar();
     if (finderMatches.length) {
       centerCurrentMatch();
     }
@@ -343,7 +345,13 @@ function rebuildSidebar(): void {
     sidebarEl.append(renderSelectedState(selected));
   }
 
-  sidebarEl.append(heading('Variables'));
+  const needle = activeVariableNeedle();
+  if (needle) {
+    const shown = model.variables.filter((v) => v.name.toLowerCase().includes(needle)).length;
+    sidebarEl.append(heading(`Variables (${shown}/${model.variables.length})`));
+  } else {
+    sidebarEl.append(heading('Variables'));
+  }
   if (model.variables.length === 0) {
     sidebarEl.append(para('No user variables found.', 'placeholder'));
   } else {
@@ -410,9 +418,25 @@ function renderChipGroup(label: string, names: string[], kind: string): HTMLElem
   return group;
 }
 
+/** When the finder is in `$` (variable) mode, the substring to filter by; else null. */
+function activeVariableNeedle(): string | null {
+  const q = finderQuery.trim();
+  return finderMode(q) === 'variable' ? q.slice(1).toLowerCase() : null;
+}
+
 function renderVariableList(m: ViewModel): HTMLElement {
   const list = el('ul', 'var-list');
-  for (const info of m.variables) {
+  const needle = activeVariableNeedle();
+  const vars = needle ? m.variables.filter((v) => v.name.toLowerCase().includes(needle)) : m.variables;
+
+  if (vars.length === 0) {
+    const empty = el('li', 'placeholder');
+    empty.textContent = `No variables match “$${needle}”.`;
+    list.append(empty);
+    return list;
+  }
+
+  for (const info of vars) {
     const item = el('li', 'var-item') as HTMLLIElement;
     item.tabIndex = 0;
     item.setAttribute('role', 'button');
