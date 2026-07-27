@@ -41,6 +41,21 @@ jobs:
       - name: Publish to Open VSX
         if: ${{ env.OVSX_PAT != '' }}
         run: npx ovsx publish *.vsix -p "$OVSX_PAT"
+      - name: Extract release notes from CHANGELOG
+        # Release notes are the CHANGELOG section for this version, so commit
+        # trailers (e.g. Co-Authored-By) never leak into the release body.
+        run: |
+          TAG="${{ github.event.inputs.tag || github.ref_name }}"
+          VERSION="${TAG#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { flag = 1; next }
+            /^## \[/ { if (flag) exit }
+            flag { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Step Function Viewer Light $TAG" > RELEASE_NOTES.md
+          fi
+          cat RELEASE_NOTES.md
       - name: Create the GitHub release and attach the VSIX
         uses: softprops/action-gh-release@v2
         with:
@@ -48,4 +63,5 @@ jobs:
           # (the action creates the tag at the dispatched commit).
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: ${{ github.event.inputs.tag || github.ref_name }}
+          body_path: RELEASE_NOTES.md
           files: '*.vsix'

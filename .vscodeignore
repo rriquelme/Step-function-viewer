@@ -24,3 +24,4 @@ esbuild.js
 coverage/**
 vitest.config.ts
 out/**/*.map
+RELEASE_NOTES.md
