@@ -254,11 +254,12 @@ body {
 .node.finder-dim {
   opacity: 0.12;
 }
-/* The match currently centered by Enter / ‹ › keeps a subtle outline. */
+/* The match currently centered by Enter / ‹ › gets a bold contour so it's easy
+   to spot in a large diagram, even after the view centers on it. */
 .node.match-current .node-box,
 .node.match-current .end-ball {
   stroke: var(--vscode-focusBorder, #e8a33d);
-  stroke-width: 3px;
+  stroke-width: 6px;
 }
 
 /* --- edges --- */

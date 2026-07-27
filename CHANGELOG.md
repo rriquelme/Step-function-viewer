@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.7]
+
+### Changed
+
+- The finder's **current match** (the one centered by Enter / ‹ ›) now has a
+  much bolder contour, so it's easy to spot in a large diagram after the view
+  centers on it.
+
 ## [0.1.6]
 
 ### Changed
