@@ -77,6 +77,51 @@ describe('StartAt stays on top', () => {
     expect(y('Done')).toBe(bottom);
     expect(y('Failed')).toBe(bottom);
   });
+
+  it('keeps the start Pass above a Map even with a retry loop back into the Map', () => {
+    // Regression: Init (Pass) -> Map -> Check -> [loop back to Map | Done].
+    // dagre's own cycle-breaking could reorder these; our flow-order ranking
+    // must keep Init strictly above the Map box.
+    const loopingNodes: LayoutInputNode[] = [
+      { id: 'Init', name: 'Init', type: 'Pass', container: false },
+      { id: 'M', name: 'M', type: 'Map', container: true },
+      { id: 'M/item/Step', name: 'Step', type: 'Pass', container: false, parentId: 'M' },
+      { id: 'Check', name: 'Check', type: 'Choice', container: false },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+    ];
+    const loopingEdges: LayoutInputEdge[] = [
+      { from: 'Init', to: 'M', kind: 'next' },
+      { from: 'M', to: 'M/item/Step', kind: 'map' },
+      { from: 'M', to: 'Check', kind: 'next' },
+      { from: 'Check', to: 'M', kind: 'choice' },
+      { from: 'Check', to: 'Done', kind: 'default' },
+    ];
+    const laid = layoutGraph(loopingNodes, loopingEdges, 'TB', 'Init');
+    const n = (id: string) => laid.nodes.find((x) => x.id === id)!;
+
+    // Init sits entirely above the Map box, and flow order holds.
+    expect(n('Init').y + n('Init').height / 2).toBeLessThanOrEqual(n('M').y - n('M').height / 2);
+    expect(n('M').y).toBeLessThan(n('Check').y);
+    // The loop edge is still drawn.
+    expect(laid.edges.some((e) => e.from === 'Check' && e.to === 'M')).toBe(true);
+  });
+
+  it('mid-flow loops never lift later steps above their predecessors', () => {
+    const chain: LayoutInputNode[] = [
+      { id: 'A', name: 'A', type: 'Pass', container: false },
+      { id: 'B', name: 'B', type: 'Task', container: false },
+      { id: 'C', name: 'C', type: 'Choice', container: false },
+    ];
+    const chainEdges: LayoutInputEdge[] = [
+      { from: 'A', to: 'B', kind: 'next' },
+      { from: 'B', to: 'C', kind: 'next' },
+      { from: 'C', to: 'B', kind: 'choice' }, // loop C -> B
+    ];
+    const laid = layoutGraph(chain, chainEdges, 'TB', 'A');
+    const y = (id: string) => laid.nodes.find((x) => x.id === id)!.y;
+    expect(y('A')).toBeLessThan(y('B'));
+    expect(y('B')).toBeLessThan(y('C'));
+  });
 });
 
 describe('layoutGraph', () => {

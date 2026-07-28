@@ -120,10 +120,11 @@ export function layoutGraph(
     return p && nodeById.has(p) ? p : ROOT;
   };
 
-  // Edges that transition BACK into the entry state are excluded from ranking so
-  // the StartAt state always stays at the top; they are still drawn (as straight
-  // connectors) below.
-  const backToStart = new Set<number>();
+  // Edges excluded from vertical ranking so every ranked transition points
+  // strictly downward (steps read top-to-bottom in declared flow order):
+  // transitions back into the entry state, plus every loop back-edge found by a
+  // DFS from each scope's entry. They are still drawn as straight connectors.
+  const unranked = new Set<number>();
 
   const layoutScope = (scopeKey: string): SubLayout => {
     const members = childrenByParent.get(scopeKey) ?? [];
@@ -146,23 +147,80 @@ export function layoutGraph(
     }
 
     const ids = new Set(members.map((m) => m.id));
-    const inDegree = new Map<string, number>();
+    const inScope: { from: string; to: string; kind: EdgeKind; label?: string; i: number }[] = [];
     edges.forEach((edge, i) => {
-      if (!ids.has(edge.from) || !ids.has(edge.to)) {
-        return;
+      if (ids.has(edge.from) && ids.has(edge.to)) {
+        inScope.push({ from: edge.from, to: edge.to, kind: edge.kind, label: edge.label, i });
       }
-      if (scopeKey === ROOT && startAt && edge.to === startAt) {
-        backToStart.add(i);
-        return;
+    });
+
+    // 1. Edges back into the machine's entry never participate in ranking.
+    for (const e of inScope) {
+      if (scopeKey === ROOT && startAt && e.to === startAt) {
+        unranked.add(e.i);
+      }
+    }
+
+    // 2. Find loop back-edges with a DFS in flow order (entry first, then other
+    //    sources, then document order) and exclude them from ranking too. The
+    //    remaining edge set is a DAG that follows the declared flow, so dagre
+    //    can never reorder steps by breaking a cycle at an arbitrary edge.
+    const adj = new Map<string, { to: string; i: number }[]>();
+    for (const e of inScope) {
+      if (!unranked.has(e.i)) {
+        (adj.get(e.from) ?? adj.set(e.from, []).get(e.from)!).push({ to: e.to, i: e.i });
+      }
+    }
+    const color = new Map<string, 'active' | 'done'>();
+    const dfs = (u: string): void => {
+      color.set(u, 'active');
+      for (const { to, i } of adj.get(u) ?? []) {
+        const c = color.get(to);
+        if (c === 'active') {
+          unranked.add(i); // closes a loop
+        } else if (!c) {
+          dfs(to);
+        }
+      }
+      color.set(u, 'done');
+    };
+    const incoming = new Map<string, number>();
+    for (const e of inScope) {
+      if (!unranked.has(e.i)) {
+        incoming.set(e.to, (incoming.get(e.to) ?? 0) + 1);
+      }
+    }
+    const entryOrder: string[] = [];
+    if (scopeKey === ROOT && startAt && ids.has(startAt)) {
+      entryOrder.push(startAt);
+    }
+    for (const m of members) {
+      if ((incoming.get(m.id) ?? 0) === 0) {
+        entryOrder.push(m.id);
+      }
+    }
+    for (const m of members) {
+      entryOrder.push(m.id);
+    }
+    for (const id of entryOrder) {
+      if (!color.has(id)) {
+        dfs(id);
+      }
+    }
+
+    const inDegree = new Map<string, number>();
+    for (const e of inScope) {
+      if (unranked.has(e.i)) {
+        continue;
       }
       const label: dagre.Label = {};
-      if (edge.label) {
-        label.width = Math.min(160, edge.label.length * 6 + 8);
+      if (e.label) {
+        label.width = Math.min(160, e.label.length * 6 + 8);
         label.height = 14;
       }
-      g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
-      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
-    });
+      g.setEdge(e.from, e.to, label, `${e.kind}#${e.i}`);
+      inDegree.set(e.to, (inDegree.get(e.to) ?? 0) + 1);
+    }
 
     // Root layout anchoring (invisible edges, filtered out of the output):
     //  - keep the entry state uniquely at the TOP by pushing any other
@@ -248,11 +306,11 @@ export function layoutGraph(
 
   // Draw edges not routed by a single dagre pass as straight connectors:
   //  - cross-scope edges (e.g. a Catch escaping a branch), and
-  //  - back-to-start edges we excluded from ranking to keep StartAt on top.
+  //  - loop back-edges excluded from ranking (into the start or elsewhere).
   // `branch`/`map` entry edges are implied by containment, so we drop them.
   edges.forEach((edge, i) => {
     const crossScope = scopeKeyOf(edge.from) !== scopeKeyOf(edge.to);
-    if (!crossScope && !backToStart.has(i)) {
+    if (!crossScope && !unranked.has(i)) {
       return;
     }
     if (edge.kind === 'branch' || edge.kind === 'map') {

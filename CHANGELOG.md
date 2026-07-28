@@ -3,6 +3,16 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.9]
+
+### Fixed
+
+- **Steps now always read top-to-bottom in declared flow order.** Loop-back
+  transitions anywhere in the machine (not just into the start) are excluded
+  from vertical ranking, so a retry/poll loop can no longer reorder states —
+  e.g. a start `Pass` being drawn below the `Map` it precedes. Loop edges are
+  still drawn.
+
 ## [0.1.8]
 
 ### Fixed
