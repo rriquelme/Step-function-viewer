@@ -122,6 +122,70 @@ describe('StartAt stays on top', () => {
     expect(y('A')).toBeLessThan(y('B'));
     expect(y('B')).toBeLessThan(y('C'));
   });
+
+  it('routes loop edges around the side, at node borders, without duplication', () => {
+    const chain: LayoutInputNode[] = [
+      { id: 'A', name: 'A', type: 'Pass', container: false },
+      { id: 'B', name: 'B', type: 'Task', container: false },
+      { id: 'C', name: 'C', type: 'Choice', container: false },
+    ];
+    const chainEdges: LayoutInputEdge[] = [
+      { from: 'A', to: 'B', kind: 'next' },
+      { from: 'B', to: 'C', kind: 'next' },
+      { from: 'C', to: 'B', kind: 'choice' }, // loop C -> B
+    ];
+    const laid = layoutGraph(chain, chainEdges, 'TB', 'A');
+    const node = (id: string) => laid.nodes.find((x) => x.id === id)!;
+
+    // Exactly ONE drawn edge for the loop — no duplicate line.
+    const loop = laid.edges.filter((e) => e.from === 'C' && e.to === 'B');
+    expect(loop).toHaveLength(1);
+
+    // Routed orthogonally: starts at C's right border, ends at B's right
+    // border (arrowhead visible), with a side lane clear of B and C.
+    const pts = loop[0].points;
+    const b = node('B');
+    const c = node('C');
+    expect(pts.length).toBeGreaterThanOrEqual(4);
+    expect(pts[0]).toEqual({ x: c.x + c.width / 2, y: c.y });
+    expect(pts[pts.length - 1]).toEqual({ x: b.x + b.width / 2, y: b.y });
+    const lane = pts[1].x;
+    expect(lane).toBeGreaterThan(b.x + b.width / 2);
+    expect(lane).toBeGreaterThan(c.x + c.width / 2);
+    // Graph bounds grow to include the lane so fit-to-screen shows it.
+    expect(laid.width).toBeGreaterThanOrEqual(lane);
+  });
+
+  it('draws every transition exactly once (choice loop + catch machine)', () => {
+    const nodes: LayoutInputNode[] = [
+      { id: 'Start', name: 'Start', type: 'Pass', container: false },
+      { id: 'Get', name: 'Get', type: 'Task', container: false },
+      { id: 'Check', name: 'Check', type: 'Choice', container: false },
+      { id: 'Handler', name: 'Handler', type: 'Task', container: false },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+    ];
+    const machineEdges: LayoutInputEdge[] = [
+      { from: 'Start', to: 'Get', kind: 'next' },
+      { from: 'Get', to: 'Check', kind: 'next' },
+      { from: 'Get', to: 'Handler', kind: 'catch', label: 'States.ALL' },
+      { from: 'Check', to: 'Get', kind: 'choice' }, // retry loop
+      { from: 'Check', to: 'Done', kind: 'default' },
+      { from: 'Handler', to: 'Get', kind: 'next' }, // retry after handling
+    ];
+    const laid = layoutGraph(nodes, machineEdges, 'TB', 'Start');
+
+    const key = (e: { from: string; to: string; kind: string }) => `${e.from}>${e.to}:${e.kind}`;
+    const drawn = new Map<string, number>();
+    for (const e of laid.edges) {
+      drawn.set(key(e), (drawn.get(key(e)) ?? 0) + 1);
+    }
+    // Each declared transition appears exactly once — never routed AND drawn
+    // again as a connector.
+    for (const e of machineEdges) {
+      expect(drawn.get(key(e)), key(e)).toBe(1);
+    }
+    expect(laid.edges.length).toBe(machineEdges.length);
+  });
 });
 
 describe('layoutGraph', () => {

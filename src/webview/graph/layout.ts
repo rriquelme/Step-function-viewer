@@ -277,7 +277,6 @@ export function layoutGraph(
 
   const laidOutNodes: LaidOutNode[] = [];
   const laidOutEdges: LaidOutEdge[] = [];
-  const centers = new Map<string, Point>();
 
   const place = (scope: SubLayout, originX: number, originY: number): void => {
     for (const r of scope.routes) {
@@ -290,7 +289,6 @@ export function layoutGraph(
       const node = nodeById.get(id)!;
       const cx = originX + p.x;
       const cy = originY + p.y;
-      centers.set(id, { x: cx, y: cy });
       laidOutNodes.push({ ...node, x: cx, y: cy, width: p.w, height: p.h });
       if (node.container) {
         const sub = scope.subByContainer.get(id);
@@ -304,10 +302,15 @@ export function layoutGraph(
   const root = layoutScope(ROOT);
   place(root, ROOT_MARGIN, ROOT_MARGIN);
 
-  // Draw edges not routed by a single dagre pass as straight connectors:
-  //  - cross-scope edges (e.g. a Catch escaping a branch), and
-  //  - loop back-edges excluded from ranking (into the start or elsewhere).
+  // Edges not routed by a dagre pass — loop back-edges and cross-scope edges —
+  // are routed orthogonally around the side of the states they span, starting
+  // and ending at node borders so the arrowhead stays visible. (Previously they
+  // were straight center-to-center lines that cut through the diagram and hid
+  // their arrowhead under the target node, looking like duplicate edges.)
   // `branch`/`map` entry edges are implied by containment, so we drop them.
+  const geom = new Map(laidOutNodes.map((n) => [n.id, n]));
+  let width = root.width + ROOT_MARGIN * 2;
+  let height = root.height + ROOT_MARGIN * 2;
   edges.forEach((edge, i) => {
     const crossScope = scopeKeyOf(edge.from) !== scopeKeyOf(edge.to);
     if (!crossScope && !unranked.has(i)) {
@@ -316,19 +319,76 @@ export function layoutGraph(
     if (edge.kind === 'branch' || edge.kind === 'map') {
       return;
     }
-    const a = centers.get(edge.from);
-    const b = centers.get(edge.to);
-    if (a && b) {
-      laidOutEdges.push({ from: edge.from, to: edge.to, kind: edge.kind, label: edge.label, points: [a, b] });
+    const a = geom.get(edge.from);
+    const b = geom.get(edge.to);
+    if (!a || !b) {
+      return;
     }
+    const points = routeAround(a, b, laidOutNodes, rankdir);
+    for (const p of points) {
+      width = Math.max(width, p.x + ROOT_MARGIN);
+      height = Math.max(height, p.y + ROOT_MARGIN);
+    }
+    laidOutEdges.push({ from: edge.from, to: edge.to, kind: edge.kind, label: edge.label, points });
   });
 
   return {
     nodes: laidOutNodes,
     edges: laidOutEdges,
-    width: root.width + ROOT_MARGIN * 2,
-    height: root.height + ROOT_MARGIN * 2,
+    width,
+    height,
   };
+}
+
+/**
+ * Orthogonal route for an edge dagre didn't lay out (loop-backs, cross-scope):
+ * leave the source's side border, run along a lane just outside every state the
+ * edge spans vertically (TB) or horizontally (LR), and enter the target's side
+ * border so the arrowhead is visible.
+ */
+function routeAround(
+  a: LaidOutNode,
+  b: LaidOutNode,
+  all: LaidOutNode[],
+  rankdir: Rankdir,
+): Point[] {
+  const GAP = 36;
+  // Nudge self-loops apart so the out and return segments don't overlap.
+  const selfOffset = a.id === b.id ? 12 : 0;
+
+  if (rankdir === 'LR') {
+    const minX = Math.min(a.x - a.width / 2, b.x - b.width / 2);
+    const maxX = Math.max(a.x + a.width / 2, b.x + b.width / 2);
+    let lane = -Infinity;
+    for (const n of all) {
+      if (n.x + n.width / 2 >= minX && n.x - n.width / 2 <= maxX) {
+        lane = Math.max(lane, n.y + n.height / 2);
+      }
+    }
+    lane += GAP;
+    return [
+      { x: a.x - selfOffset, y: a.y + a.height / 2 },
+      { x: a.x - selfOffset, y: lane },
+      { x: b.x + selfOffset, y: lane },
+      { x: b.x + selfOffset, y: b.y + b.height / 2 },
+    ];
+  }
+
+  const minY = Math.min(a.y - a.height / 2, b.y - b.height / 2);
+  const maxY = Math.max(a.y + a.height / 2, b.y + b.height / 2);
+  let lane = -Infinity;
+  for (const n of all) {
+    if (n.y + n.height / 2 >= minY && n.y - n.height / 2 <= maxY) {
+      lane = Math.max(lane, n.x + n.width / 2);
+    }
+  }
+  lane += GAP;
+  return [
+    { x: a.x + a.width / 2, y: a.y - selfOffset },
+    { x: lane, y: a.y - selfOffset },
+    { x: lane, y: b.y + selfOffset },
+    { x: b.x + b.width / 2, y: b.y + selfOffset },
+  ];
 }
 
 function findEdge(

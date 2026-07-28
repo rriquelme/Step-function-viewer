@@ -3,6 +3,19 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.10]
+
+### Fixed
+
+- **No more "duplicate" straight lines next to Choice options and Catch edges.**
+  Loop-back and cross-scope transitions were drawn as straight center-to-center
+  lines that cut across the diagram with the arrowhead hidden under the target
+  node — overlapping the properly routed edge and looking like a duplicate.
+  These edges now route orthogonally around the side of the states they span,
+  start and end at node borders (arrowhead visible), and keep their kind's
+  styling. Each transition is drawn exactly once (covered by a regression test),
+  and the graph bounds grow to include the side lane so fit-to-screen shows it.
+
 ## [0.1.9]
 
 ### Fixed
