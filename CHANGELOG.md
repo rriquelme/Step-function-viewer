@@ -3,6 +3,16 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.8]
+
+### Fixed
+
+- On large/wide machines, the **entry (StartAt) state is now always the top
+  block** and **terminal (Succeed/Fail) states are pulled to the bottom row**.
+  Previously a state reached only by a `Catch` could share the top rank with the
+  start, and terminals could land mid-diagram. Achieved with invisible layout
+  anchors (they don't add visible nodes or edges).
+
 ## [0.1.7]
 
 ### Changed

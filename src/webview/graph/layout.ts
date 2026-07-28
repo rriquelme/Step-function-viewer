@@ -63,6 +63,10 @@ const SCOPE_PAD = 18; // padding between a container box and its contents
 const HEADER_H = 26; // top strip of a container box reserved for its label
 
 const ROOT = '__root__';
+// Invisible layout anchors used to pin the entry state to the top and terminal
+// states to the bottom. Filtered out of the rendered nodes/edges.
+const BOTTOM = '__bottom__';
+const PIN = '__pin__';
 
 export function nodeWidth(name: string): number {
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(name.length * CHAR_WIDTH) + 36));
@@ -142,6 +146,7 @@ export function layoutGraph(
     }
 
     const ids = new Set(members.map((m) => m.id));
+    const inDegree = new Map<string, number>();
     edges.forEach((edge, i) => {
       if (!ids.has(edge.from) || !ids.has(edge.to)) {
         return;
@@ -156,7 +161,30 @@ export function layoutGraph(
         label.height = 14;
       }
       g.setEdge(edge.from, edge.to, label, `${edge.kind}#${i}`);
+      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
     });
+
+    // Root layout anchoring (invisible edges, filtered out of the output):
+    //  - keep the entry state uniquely at the TOP by pushing any other
+    //    source-like nodes (e.g. a Catch-only error handler) below it, and
+    //  - pull terminal (Succeed/Fail) states to the BOTTOM via a virtual sink.
+    if (scopeKey === ROOT) {
+      let pin = 0;
+      if (startAt && ids.has(startAt)) {
+        for (const m of members) {
+          if (m.id !== startAt && (inDegree.get(m.id) ?? 0) === 0) {
+            g.setEdge(startAt, m.id, { weight: 1 }, `${PIN}${pin++}`);
+          }
+        }
+      }
+      const terminals = members.filter((m) => isTerminal(m.type));
+      if (terminals.length > 0) {
+        g.setNode(BOTTOM, { width: 0, height: 0 });
+        for (const t of terminals) {
+          g.setEdge(t.id, BOTTOM, { weight: 8 }, `${PIN}${pin++}`);
+        }
+      }
+    }
 
     dagre.layout(g);
 
@@ -167,6 +195,10 @@ export function layoutGraph(
     }
     const routes: LaidOutEdge[] = [];
     for (const e of g.edges()) {
+      // Skip the invisible anchor edges (to the virtual bottom / pin edges).
+      if (e.v === BOTTOM || e.w === BOTTOM || e.name?.startsWith(PIN)) {
+        continue;
+      }
       const original = findEdge(edges, e.v, e.w, e.name);
       if (!original) {
         continue;

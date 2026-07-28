@@ -48,6 +48,35 @@ describe('StartAt stays on top', () => {
     // The back-edge is still drawn.
     expect(laid.edges.some((e) => e.from === 'Retry' && e.to === 'Start')).toBe(true);
   });
+
+  it('pins the entry to the top and terminals to the bottom (wide machine)', () => {
+    // "ErrHandler" has no normal incoming edge (as if reached only by a Catch),
+    // so without pinning it would share the top rank with the entry state.
+    const wideNodes: LayoutInputNode[] = [
+      { id: 'Init', name: 'Init', type: 'Task', container: false },
+      { id: 'Work', name: 'Work', type: 'Task', container: false },
+      { id: 'ErrHandler', name: 'ErrHandler', type: 'Task', container: false },
+      { id: 'Done', name: 'Done', type: 'Succeed', container: false },
+      { id: 'Failed', name: 'Failed', type: 'Fail', container: false },
+    ];
+    const wideEdges: LayoutInputEdge[] = [
+      { from: 'Init', to: 'Work', kind: 'next' },
+      { from: 'Work', to: 'Done', kind: 'next' },
+      { from: 'ErrHandler', to: 'Failed', kind: 'next' },
+    ];
+    const laid = layoutGraph(wideNodes, wideEdges, 'TB', 'Init');
+    const y = (id: string) => laid.nodes.find((n) => n.id === id)!.y;
+    const ys = laid.nodes.map((n) => n.y);
+
+    // Entry is strictly the topmost block.
+    expect(y('Init')).toBe(Math.min(...ys));
+    expect(y('Init')).toBeLessThan(y('ErrHandler'));
+
+    // Both terminals sit on the bottom row.
+    const bottom = Math.max(...ys);
+    expect(y('Done')).toBe(bottom);
+    expect(y('Failed')).toBe(bottom);
+  });
 });
 
 describe('layoutGraph', () => {
