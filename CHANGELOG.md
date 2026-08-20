@@ -3,6 +3,18 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.11]
+
+### Changed
+
+- **The viewer is now offered for any `.json` / `.yaml` / `.yml` file** in
+  "Open With…" (previously only `*.asl.*` names matched, so files like
+  `MyMachine.asl(1).yaml` never showed the viewer).
+- **Proactive suggestion:** the extension now activates when JSON/YAML files are
+  opened, and when a file looks like a state machine (`StartAt` + `States`) it
+  suggests opening the graph — with "Open Viewer", "Always Open Automatically"
+  (turns on `stepFunctionViewer.autoOpen`), and "Don't Show Again" options.
+
 ## [0.1.10]
 
 ### Fixed
