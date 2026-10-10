@@ -3,6 +3,13 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.14]
+
+### Changed
+
+- **The "SF Viewer" toolbar button is hidden when the viewer is already open**
+  in that tab; it only shows on the text editor.
+
 ## [0.1.13]
 
 ### Changed
