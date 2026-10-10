@@ -73,4 +73,33 @@ describe('Step Function Viewer extension', () => {
     await vscode.window.showTextDocument(doc);
     await vscode.commands.executeCommand('stepFunctionViewer.open');
   });
+
+  it('opens *.asl.json in the viewer by default and plain JSON as text', async () => {
+    const activeViewType = () => {
+      const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+      return input instanceof vscode.TabInputCustom ? input.viewType : undefined;
+    };
+
+    // The previous test left the viewer open; start from a clean slate.
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+
+    await vscode.commands.executeCommand(
+      'vscode.open',
+      vscode.Uri.file(path.join(EXAMPLES, 'order-processing.asl.json')),
+    );
+    assert.strictEqual(
+      await waitFor(activeViewType, (v) => v !== undefined),
+      'stepFunctionViewer.editor',
+    );
+
+    await vscode.commands.executeCommand(
+      'vscode.open',
+      vscode.Uri.file(path.resolve(EXAMPLES, '../package.json')),
+    );
+    const input = await waitFor(
+      () => vscode.window.tabGroups.activeTabGroup.activeTab?.input,
+      (i) => i instanceof vscode.TabInputText,
+    );
+    assert.ok(input instanceof vscode.TabInputText, 'plain JSON should open as text');
+  });
 });

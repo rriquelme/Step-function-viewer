@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.15]
+
+### Fixed
+
+- **No more duplicate "Step Function Viewer Light" entry in "Open With…"** for
+  `*.asl.*` files. The viewer is now a single editor, made the default for
+  `*.asl`, `*.asl.json`, `*.asl.yaml` and `*.asl.yml` through a default
+  `workbench.editorAssociations` setting (which you can override).
+
 ## [0.1.14]
 
 ### Changed

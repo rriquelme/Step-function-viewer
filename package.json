@@ -2,7 +2,7 @@
   "name": "step-function-viewer-light",
   "displayName": "Step Function Viewer Light",
   "description": "Interactive viewer for AWS Step Functions (JSONata) with per-state variable inspection and cross-state variable highlighting.",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "publisher": "RobertoRiquelmeSaez",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -41,28 +41,12 @@
   "contributes": {
     "customEditors": [
       {
-        "viewType": "stepFunctionViewer.aslEditor",
+        "viewType": "stepFunctionViewer.editor",
         "displayName": "Step Function Viewer Light",
         "selector": [
           {
             "filenamePattern": "*.asl"
           },
-          {
-            "filenamePattern": "*.asl.json"
-          },
-          {
-            "filenamePattern": "*.asl.yaml"
-          },
-          {
-            "filenamePattern": "*.asl.yml"
-          }
-        ],
-        "priority": "default"
-      },
-      {
-        "viewType": "stepFunctionViewer.editor",
-        "displayName": "Step Function Viewer Light",
-        "selector": [
           {
             "filenamePattern": "*.json"
           },
@@ -101,10 +85,18 @@
       "editor/title": [
         {
           "command": "stepFunctionViewer.openFromTitle",
-          "when": "(resourceLangId == json || resourceLangId == yaml || resourceExtname == .asl) && activeCustomEditorId != stepFunctionViewer.editor && activeCustomEditorId != stepFunctionViewer.aslEditor",
+          "when": "(resourceLangId == json || resourceLangId == yaml || resourceExtname == .asl) && activeCustomEditorId != stepFunctionViewer.editor",
           "group": "navigation"
         }
       ]
+    },
+    "configurationDefaults": {
+      "workbench.editorAssociations": {
+        "*.asl": "stepFunctionViewer.editor",
+        "*.asl.json": "stepFunctionViewer.editor",
+        "*.asl.yaml": "stepFunctionViewer.editor",
+        "*.asl.yml": "stepFunctionViewer.editor"
+      }
     },
     "configuration": {
       "title": "Step Function Viewer Light",
