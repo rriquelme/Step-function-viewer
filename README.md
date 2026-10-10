@@ -11,8 +11,9 @@ it. No account, no sign-in, no network — it all runs on your machine.
 
 ## Usage
 
-Open an Amazon States Language file (`*.asl.json`, `*.asl`, `*.asl.yaml`, or
-`*.asl.yml`), then either:
+Amazon States Language files (`*.asl.json`, `*.asl`, `*.asl.yaml`, or
+`*.asl.yml`) open in the viewer by default. For any other `.json` / `.yaml` state
+machine, either:
 
 - right-click the file → **Open With… → Step Function Viewer Light**, or
 - run **“Open Step Function Viewer Light (SF Viewer)”** from the Command Palette

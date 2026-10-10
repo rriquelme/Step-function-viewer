@@ -3,6 +3,15 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.13]
+
+### Changed
+
+- **The viewer is now the default editor for `*.asl.json`, `*.asl.yaml`,
+  `*.asl.yml` and `*.asl` files**, so they open straight into the graph (use
+  "Reopen Editor With… → Text Editor" for the source). Plain `.json` / `.yaml`
+  files still open as text, with the viewer available in "Open With…".
+
 ## [0.1.12]
 
 ### Changed

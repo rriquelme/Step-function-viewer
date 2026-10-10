@@ -9,18 +9,28 @@ import type { ExtensionToWebview, WebviewToExtension } from '../shared/protocol'
  */
 export class StepFunctionEditorProvider implements vscode.CustomTextEditorProvider {
   public static readonly viewType = 'stepFunctionViewer.editor';
+  /** Same editor, contributed as the default for `*.asl.*` files only. */
+  public static readonly aslViewType = 'stepFunctionViewer.aslEditor';
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
     const provider = new StepFunctionEditorProvider(context);
-    return vscode.window.registerCustomEditorProvider(
-      StepFunctionEditorProvider.viewType,
-      provider,
-      {
-        webviewOptions: { retainContextWhenHidden: true },
-        supportsMultipleEditorsPerDocument: false,
-      },
+    const options = {
+      webviewOptions: { retainContextWhenHidden: true },
+      supportsMultipleEditorsPerDocument: false,
+    };
+    return vscode.Disposable.from(
+      vscode.window.registerCustomEditorProvider(
+        StepFunctionEditorProvider.viewType,
+        provider,
+        options,
+      ),
+      vscode.window.registerCustomEditorProvider(
+        StepFunctionEditorProvider.aslViewType,
+        provider,
+        options,
+      ),
     );
   }
 

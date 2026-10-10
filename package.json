@@ -2,7 +2,7 @@
   "name": "step-function-viewer-light",
   "displayName": "Step Function Viewer Light",
   "description": "Interactive viewer for AWS Step Functions (JSONata) with per-state variable inspection and cross-state variable highlighting.",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "publisher": "RobertoRiquelmeSaez",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -41,12 +41,28 @@
   "contributes": {
     "customEditors": [
       {
-        "viewType": "stepFunctionViewer.editor",
+        "viewType": "stepFunctionViewer.aslEditor",
         "displayName": "Step Function Viewer Light",
         "selector": [
           {
             "filenamePattern": "*.asl"
           },
+          {
+            "filenamePattern": "*.asl.json"
+          },
+          {
+            "filenamePattern": "*.asl.yaml"
+          },
+          {
+            "filenamePattern": "*.asl.yml"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "stepFunctionViewer.editor",
+        "displayName": "Step Function Viewer Light",
+        "selector": [
           {
             "filenamePattern": "*.json"
           },
