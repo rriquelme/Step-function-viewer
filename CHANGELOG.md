@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.16]
+
+### Changed
+
+- **Reset (⟲) now resets everything:** it fits the graph to the panel (like
+  Fit), clears the selected state and variable highlight, and empties the
+  search box. Previously it only returned to 100% zoom at the top-left corner.
+
 ## [0.1.15]
 
 ### Fixed

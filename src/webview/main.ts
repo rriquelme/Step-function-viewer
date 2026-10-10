@@ -143,6 +143,19 @@ function centerCurrentMatch(): void {
   }
 }
 
+/** Fit the graph and clear the selected state, variable highlight and finder text. */
+function resetView(): void {
+  selectedNodeId = undefined;
+  selectedVariable = undefined;
+  finderQuery = '';
+  finderIndex = 0;
+  recomputeFinder();
+  refreshHighlight();
+  if (lastLayout) {
+    viewport?.fit(lastLayout);
+  }
+}
+
 /** Re-apply highlight classes and rebuild the cheap DOM (toolbar + sidebar). */
 function refreshHighlight(): void {
   const sets = highlightSets();
@@ -254,7 +267,7 @@ function rebuildToolbar(): void {
     controls.append(iconButton('+', 'Zoom in', () => viewport?.zoomIn()));
     controls.append(iconButton('−', 'Zoom out', () => viewport?.zoomOut()));
     controls.append(iconButton('⤢', 'Fit', () => lastLayout && viewport?.fit(lastLayout)));
-    controls.append(iconButton('⟲', 'Reset', () => viewport?.reset()));
+    controls.append(iconButton('⟲', 'Reset view, selection and search', resetView));
     toolbarEl.append(controls);
 
     // 4. Finder.
