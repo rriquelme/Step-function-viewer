@@ -3,6 +3,14 @@
 All notable changes to the Step Function Viewer Light extension are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.12]
+
+### Changed
+
+- **Shorter editor title button:** the toolbar button now reads "SF Viewer"
+  instead of "Open Step Function Viewer Light". The Command Palette entry is now
+  "Step Functions: Open Step Function Viewer Light (SF Viewer)".
+
 ## [0.1.11]
 
 ### Changed

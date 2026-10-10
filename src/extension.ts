@@ -7,21 +7,22 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(StepFunctionEditorProvider.register(context));
   context.subscriptions.push(registerDiagnostics());
 
+  const openViewer = async (): Promise<void> => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    if (!uri) {
+      void vscode.window.showInformationMessage('Open an Amazon States Language (ASL) file first.');
+      return;
+    }
+    await vscode.commands.executeCommand(
+      'vscode.openWith',
+      uri,
+      StepFunctionEditorProvider.viewType,
+    );
+  };
+  // Same action under a short label for the editor title button; hidden from the palette.
   context.subscriptions.push(
-    vscode.commands.registerCommand('stepFunctionViewer.open', async () => {
-      const uri = vscode.window.activeTextEditor?.document.uri;
-      if (!uri) {
-        void vscode.window.showInformationMessage(
-          'Open an Amazon States Language (ASL) file first.',
-        );
-        return;
-      }
-      await vscode.commands.executeCommand(
-        'vscode.openWith',
-        uri,
-        StepFunctionEditorProvider.viewType,
-      );
-    }),
+    vscode.commands.registerCommand('stepFunctionViewer.open', openViewer),
+    vscode.commands.registerCommand('stepFunctionViewer.openFromTitle', openViewer),
   );
 
   context.subscriptions.push(registerAutoOpen());

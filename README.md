@@ -15,7 +15,7 @@ Open an Amazon States Language file (`*.asl.json`, `*.asl`, `*.asl.yaml`, or
 `*.asl.yml`), then either:
 
 - right-click the file → **Open With… → Step Function Viewer Light**, or
-- run **“Open Step Function Viewer Light”** from the Command Palette
+- run **“Open Step Function Viewer Light (SF Viewer)”** from the Command Palette
   (<kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>).
 
 ## Highlights
